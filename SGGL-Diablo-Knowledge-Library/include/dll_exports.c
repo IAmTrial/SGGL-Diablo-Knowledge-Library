@@ -27,7 +27,7 @@
  *  to convey the resulting work.
  */
 
-#include "dll_export.h"
+#include "dll_exports.h"
 
 void Knowledge_PrintGameInfo(
     const wchar_t* game_path,
