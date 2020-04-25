@@ -27,6 +27,9 @@
  *  to convey the resulting work.
  */
 
+#ifndef SGGLDKL_GAME_VERSION_H_
+#define SGGLDKL_GAME_VERSION_H_
+
 enum GameVersion {
   DIABLO_1_00, DIABLO_1_02, DIABLO_1_03, DIABLO_1_04, DIABLO_1_05,
   DIABLO_1_07, DIABLO_1_08, DIABLO_1_09, DIABLO_1_09B,
@@ -44,3 +47,5 @@ enum GameVersion {
 };
 
 enum GameVersion GetGameVersionFromExecutable(const wchar_t* game_path);
+
+#endif /* SGGLDKL_GAME_VERSION_H_ */
