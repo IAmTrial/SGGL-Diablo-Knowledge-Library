@@ -1,8 +1,8 @@
 /**
- * SlashGaming Game Loader - Knowledge Library
+ * SlashGaming Game Loader - Diablo Knowledge Library
  * Copyright (C) 2020  Mir Drualga
  *
- * This file is part of SlashGaming Game Loader - Knowledge Library.
+ * This file is part of SlashGaming Game Loader - Diablo Knowledge Library.
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published
@@ -27,4 +27,10 @@
  *  to convey the resulting work.
  */
 
-#undef DLLEXPORT
+#if defined(SGGLKL_DLLEXPORT)
+#define DLLEXPORT __declspec(dllexport)
+#elif defined(SGGLKL_DLLIMPORT)
+#define DLLEXPORT __declspec(dllimport)
+#else
+#define DLLEXPORT
+#endif

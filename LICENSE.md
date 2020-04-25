@@ -1,4 +1,4 @@
-# SlashGaming Game Loader - Knowledge Library
+# SlashGaming Game Loader - Diablo Knowledge Library
 Copyright (C) 2020  Mir Drualga
 
 This program is free software: you can redistribute it and/or modify
