@@ -113,7 +113,7 @@ free_file_version_info:
   free(file_version_info);
 }
 
-static void ExtractFileStringValue(
+static wchar_t* ExtractFileStringValue(
     const wchar_t* game_path,
     const wchar_t* string_name,
     size_t string_name_len
@@ -229,6 +229,8 @@ static void ExtractFileStringValue(
 
 free_file_version_info:
   free(file_version_info);
+
+  return file_string_value;
 }
 
 void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
