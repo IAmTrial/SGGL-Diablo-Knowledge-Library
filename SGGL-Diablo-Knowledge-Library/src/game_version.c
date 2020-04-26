@@ -279,7 +279,7 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
 
 void DeinitGameVersion(void) {
   free(running_product_name);
-  running_game_version = VERSION_UNKNOWN;
+  running_game_version = 0;
 }
 
 enum GameVersion GetRunningGameVersion(void) {
