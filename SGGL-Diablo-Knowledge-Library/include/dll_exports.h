@@ -36,19 +36,21 @@
 
 #include "dllexport_define.inc"
 
-DLLEXPORT void Knowledge_PrintGameInfo(
+DLLEXPORT void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
 );
 
-DLLEXPORT int Knowledge_InjectLibrariesToProcesses(
-    const wchar_t** libraries_to_inject,
-    size_t num_libraries,
+DLLEXPORT void Knowledge_Deinit(
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
 );
 
-DLLEXPORT void Knowledge_Cleanup(
+DLLEXPORT void Knowledge_PrintGameInfo(void);
+
+DLLEXPORT int Knowledge_InjectLibrariesToProcesses(
+    const wchar_t** libraries_to_inject,
+    size_t num_libraries,
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
 );

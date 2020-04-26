@@ -29,11 +29,19 @@
 
 #include "dll_exports.h"
 
-void Knowledge_PrintGameInfo(
+void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
 ) {
-  
+}
+
+void Knowledge_Deinit(
+    const PROCESS_INFORMATION* processes_infos,
+    size_t num_instances
+) {
+}
+
+void Knowledge_PrintGameInfo(void) {
 }
 
 int Knowledge_InjectLibrariesToProcesses(
@@ -41,9 +49,6 @@ int Knowledge_InjectLibrariesToProcesses(
     size_t num_libraries,
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
-);
-
-void Knowledge_Cleanup(
-    const PROCESS_INFORMATION* processes_infos,
-    size_t num_instances
-);
+) {
+  return 0;
+}
