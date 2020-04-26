@@ -27,12 +27,13 @@
  *  to convey the resulting work.
  */
 
-#include "dll_exports.h"
+#include "../include/dll_exports.h"
 
 void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
 ) {
+
 }
 
 void Knowledge_Deinit(
