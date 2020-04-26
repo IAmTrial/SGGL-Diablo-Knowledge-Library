@@ -29,8 +29,10 @@
 
 #include "game_version.h"
 
+#include <shlwapi.h>
 #include <windows.h>
 
+#include "diablo/diablo_game_version.h"
 #include "error_handling.h"
 
 /* Struct taken from Microsoft's example. */
@@ -235,20 +237,44 @@ free_file_version_info:
 
 void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
   const wchar_t* kProductNameStr = L"ProductName";
-  const size_t kProductNameLen = (sizeof(kProductNameStr) / sizeof(wchar_t)) - 1;
+  const size_t kProductNameLen =
+      (sizeof(L"ProductName") / sizeof(kProductNameStr[0])) - 1;
 
-  VS_FIXEDFILEINFO file_info;
+  const wchar_t* kStormDllFileName = L"storm.dll";
+  const size_t kStormDllFileNameLen =
+      (sizeof(L"storm.dll") / sizeof(kStormDllFileName[0])) - 1;
 
-  /* Initialize everything required for determining the game and version. */
+  VS_FIXEDFILEINFO game_file_info;
+  VS_FIXEDFILEINFO storm_file_info;
+
+  wchar_t* storm_file_path;
+
+  /* Initialize everything required for determining the game. */
   running_product_name = ExtractFileStringValue(
       game_path,
       kProductNameStr,
       kProductNameLen
   );
 
-  ExtractFileInfo(&file_info, game_path);
-
   /* Determine what to do based on the reported game name. */
+  if (wcscmp(running_product_name, L"Blizzard Entertainment Diablo") == 0) {
+    /* Diablo has to use Storm.dll and Diablo.exe to determine the version. */
+
+    /* Set up the path as Storm.dll from the same directory. */
+    storm_file_path = malloc(
+        (game_path_len + kStormDllFileNameLen) * sizeof(storm_file_path[0])
+    );
+    wcscpy(storm_file_path, game_path);
+    PathRemoveFileSpecW(storm_file_path);
+    PathAppendW(storm_file_path, kStormDllFileName);
+
+    ExtractFileInfo(&storm_file_info, storm_file_path);
+
+    running_game_version = Diablo_DetermineGameVersion(
+        &game_file_info,
+        &storm_file_info
+    );
+  }
 }
 
 void DeinitGameVersion(void) {
