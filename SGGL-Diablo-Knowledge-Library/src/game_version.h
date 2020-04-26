@@ -30,16 +30,20 @@
 #ifndef SGGLDKL_GAME_VERSION_H_
 #define SGGLDKL_GAME_VERSION_H_
 
+#include <stddef.h>
 #include <wchar.h>
 
 enum GameVersion {
-  DIABLO_1_00, DIABLO_1_02, DIABLO_1_03, DIABLO_1_04, DIABLO_1_05,
+  VERSION_UNKNOWN = -1,
+
+  DIABLO_1_00 = 0, DIABLO_1_02, DIABLO_1_03, DIABLO_1_04, DIABLO_1_05,
   DIABLO_1_07, DIABLO_1_08, DIABLO_1_09, DIABLO_1_09B,
 
   HELLFIRE_1_00, HELLFIRE_1_01,
 
   DIABLO_II_1_00, DIABLO_II_1_01, DIABLO_II_1_02, DIABLO_II_1_03,
-  DIABLO_II_1_04, DIABLO_II_1_05, DIABLO_II_1_06, DIABLO_II_1_06B,
+  DIABLO_II_1_04B, DIABLO_II_1_04C, DIABLO_II_1_05, DIABLO_II_1_05B,
+  DIABLO_II_1_06, DIABLO_II_1_06B,
 
   DIABLO_II_1_07_BETA, DIABLO_II_1_07, DIABLO_II_1_08, DIABLO_II_1_09,
   DIABLO_II_1_09B, DIABLO_II_1_09D, DIABLO_II_1_10_BETA,
@@ -48,6 +52,7 @@ enum GameVersion {
   DIABLO_II_1_14A, DIABLO_II_1_14B, DIABLO_II_1_14C, DIABLO_II_1_14D,
 };
 
-enum GameVersion GetGameVersionFromExecutable(const wchar_t* game_path);
+void InitGameVersion(const wchar_t* game_path, size_t game_path_len);
+enum GameVersion GetGameVersion(void);
 
 #endif /* SGGLDKL_GAME_VERSION_H_ */
