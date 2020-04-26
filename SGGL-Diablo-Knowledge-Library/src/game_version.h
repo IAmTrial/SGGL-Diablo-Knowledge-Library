@@ -36,6 +36,7 @@
 #include "game_version_enum.h"
 
 void InitGameVersion(const wchar_t* game_path, size_t game_path_len);
+void DeinitGameVersion(void);
 enum GameVersion GetGameVersion(void);
 
 #endif /* SGGLDKL_GAME_VERSION_H_ */

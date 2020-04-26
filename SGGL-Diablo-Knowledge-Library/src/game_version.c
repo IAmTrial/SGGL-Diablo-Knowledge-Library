@@ -249,6 +249,11 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
   /* Determine what to do based on the reported game name. */
 }
 
+void DeinitGameVersion(void) {
+  free(running_product_name);
+  running_game_version = VERSION_UNKNOWN;
+}
+
 enum GameVersion GetRunningGameVersion(void) {
   return running_game_version;
 }
