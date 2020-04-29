@@ -27,8 +27,8 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_ERROR_HANDLING_H_
-#define SGGLDKL_ERROR_HANDLING_H_
+#ifndef SGGLDKL_ENCODING_H_
+#define SGGLDKL_ENCODING_H_
 
 #include <wchar.h>
 
@@ -52,4 +52,4 @@ char* ConvertWideToMultibyte(
     const wchar_t* wide_string
 );
 
-#endif /* SGGLDKL_ERROR_HANDLING_H_ */
+#endif /* SGGLDKL_ENCODING_H_ */
