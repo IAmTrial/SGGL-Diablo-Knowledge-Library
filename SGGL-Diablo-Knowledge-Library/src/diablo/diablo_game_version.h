@@ -27,8 +27,8 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_DIABLO_GAME_VERSION_H_
-#define SGGLDKL_DIABLO_GAME_VERSION_H_
+#ifndef SGGLDKL_DIABLO_DIABLO_GAME_VERSION_H_
+#define SGGLDKL_DIABLO_DIABLO_GAME_VERSION_H_
 
 #include <windows.h>
 
@@ -39,4 +39,4 @@ enum GameVersion Diablo_DetermineGameVersion(
     const VS_FIXEDFILEINFO* storm_file_info
 );
 
-#endif /* SGGLDKL_DIABLO_GAME_VERSION_H_ */
+#endif /* SGGLDKL_DIABLO_DIABLO_GAME_VERSION_H_ */
