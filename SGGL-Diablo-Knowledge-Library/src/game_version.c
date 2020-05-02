@@ -264,6 +264,11 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
     storm_file_path = malloc(
         (game_path_len + kStormDllFileNameLen) * sizeof(storm_file_path[0])
     );
+
+    if (storm_file_path == NULL) {
+      ExitOnAllocationFailure();
+    }
+
     wcscpy(storm_file_path, game_path);
     PathRemoveFileSpecW(storm_file_path);
     PathAppendW(storm_file_path, kStormDllFileName);
