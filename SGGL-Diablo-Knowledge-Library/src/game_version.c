@@ -275,6 +275,8 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
 
     ExtractFileInfo(&storm_file_info, storm_file_path);
 
+    free(storm_file_path);
+
     running_game_version = Diablo_DetermineGameVersion(
         &game_file_info,
         &storm_file_info
