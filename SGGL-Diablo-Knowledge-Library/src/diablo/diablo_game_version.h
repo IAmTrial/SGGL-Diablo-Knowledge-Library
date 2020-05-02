@@ -35,7 +35,7 @@
 #include "../game_version_enum.h"
 
 enum GameVersion Diablo_DetermineGameVersion(
-    const VS_FIXEDFILEINFO* game_file_info,
+    const VS_FIXEDFILEINFO* diablo_file_info,
     const VS_FIXEDFILEINFO* storm_file_info
 );
 
