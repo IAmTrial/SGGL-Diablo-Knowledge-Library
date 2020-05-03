@@ -83,7 +83,8 @@ static wchar_t* GetStormPath(
   wchar_t* storm_file_path;
 
   storm_file_path = malloc(
-      (diablo_file_path_len + kStormDllFileNameLen) * sizeof(storm_file_path[0])
+      (diablo_file_path_len + kStormDllFileNameLen)
+          * sizeof(storm_file_path[0])
   );
 
   if (storm_file_path == NULL) {
