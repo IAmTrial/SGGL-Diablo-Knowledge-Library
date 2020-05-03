@@ -37,6 +37,7 @@
 
 void InitGameVersion(const wchar_t* game_path, size_t game_path_len);
 void DeinitGameVersion(void);
-enum GameVersion GetGameVersion(void);
+
+enum GameVersion GetRunningGameVersion(void);
 
 #endif /* SGGLDKL_GAME_VERSION_H_ */
