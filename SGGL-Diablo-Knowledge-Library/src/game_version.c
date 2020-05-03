@@ -34,6 +34,7 @@
 #include <windows.h>
 
 #include "diablo/diablo_game_version.h"
+#include "diablo_ii/diablo_ii_game_version.h"
 #include "error_handling.h"
 #include "helper/game_version_finder.h"
 
@@ -50,7 +51,9 @@ struct LANGANDCODEPAGE {
 
 static const struct ProductNameAndFindGameVersionFunctionEntry
 find_version_func_table[] = {
-    { L"Blizzard Entertainment Diablo", &Diablo_FindGameVersion }
+    { L"Blizzard Entertainment Diablo", &Diablo_FindGameVersion },
+    { L"BLizzard North Diablo 2", &Diablo_II_FindGameVersion },
+    { L"Blizzard North Diablo II", &Diablo_II_FindGameVersion },
 };
 
 static enum GameVersion running_game_version = VERSION_UNKNOWN;
