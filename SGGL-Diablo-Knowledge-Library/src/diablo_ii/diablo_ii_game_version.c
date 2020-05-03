@@ -381,10 +381,12 @@ static enum GameVersion SearchGameFileInfoTable(
     const VS_FIXEDFILEINFO* game_file_info
 ) {
   const struct ShortVersionAndGameVersionEntry search_key = {
-      (game_file_info->dwFileVersionMS >> 16) & 0xFFFF,
-      (game_file_info->dwFileVersionMS >> 0) & 0xFFFF,
-      (game_file_info->dwFileVersionLS >> 16) & 0xFFFF,
-      (game_file_info->dwFileVersionLS >> 0) & 0xFFFF
+      {
+          (game_file_info->dwFileVersionMS >> 16) & 0xFFFF,
+          (game_file_info->dwFileVersionMS >> 0) & 0xFFFF,
+          (game_file_info->dwFileVersionLS >> 16) & 0xFFFF,
+          (game_file_info->dwFileVersionLS >> 0) & 0xFFFF
+      }
   };
 
   const struct ShortVersionAndGameVersionEntry* search_result;
@@ -416,8 +418,8 @@ enum GameVersion Diablo_II_FindGameVersion(
   ExtractFileInfo(&game_file_info, game_file_path);
 
   /*
-  * Perform very simple search of the game version in the table. This
-  * will not cover all cases, as some versions share file versions.
+  * Perform a search of the game version in the table. This will not
+  * cover all cases, as some versions share file versions.
   */
   first_guess_game_version = SearchGameFileInfoTable(&game_file_info);
 
