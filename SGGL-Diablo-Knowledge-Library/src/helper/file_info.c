@@ -219,7 +219,13 @@ wchar_t* ExtractFileStringValue(
     );
   }
 
-  file_string_value = malloc(file_string_value_size);
+  /* Return a copy of the file string value. */
+  file_string_value = malloc(file_string_value_size * sizeof(temp_file_string_value[0]));
+
+  if (file_string_value == NULL) {
+    ExitOnAllocationFailure();
+  }
+
   wcscpy(file_string_value, temp_file_string_value);
 
 free_file_string_sub_block:
