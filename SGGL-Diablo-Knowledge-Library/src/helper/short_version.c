@@ -57,3 +57,13 @@ int ShortVersion_CompareAll(
 
   return 0;
 }
+
+int ShortVersionAndGameVersionEntry_CompareKey(
+    const struct ShortVersionAndGameVersionEntry* entry1,
+    const struct ShortVersionAndGameVersionEntry* entry2
+) {
+  return ShortVersion_CompareAll(
+      &entry1->short_version,
+      &entry2->short_version
+  );
+}

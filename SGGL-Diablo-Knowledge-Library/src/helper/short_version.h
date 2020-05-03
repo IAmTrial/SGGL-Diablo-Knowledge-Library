@@ -32,6 +32,8 @@
 
 #include <windows.h>
 
+#include "../game_version_enum.h"
+
 struct ShortVersion {
   DWORD major_left;
   DWORD major_right;
@@ -39,33 +41,19 @@ struct ShortVersion {
   DWORD minor_right;
 };
 
+struct ShortVersionAndGameVersionEntry {
+  struct ShortVersion short_version;
+  enum GameVersion game_version;
+};
+
 int ShortVersion_CompareAll(
     const struct ShortVersion* version1,
     const struct ShortVersion* version2
-) {
-  struct ShortVersion diff = { 0 };
+);
 
-  diff.major_left = version1->major_left - version2->major_left;
-  if (diff.major_left != 0) {
-    return diff.major_left;
-  }
-
-  diff.major_right = version1->major_right - version2->major_right;
-  if (diff.major_right != 0) {
-    return diff.major_right;
-  }
-
-  diff.minor_left = version1->minor_left - version2->minor_left;
-  if (diff.minor_left != 0) {
-    return diff.minor_left;
-  }
-
-  diff.minor_right = version1->minor_right - version2->minor_right;
-  if (diff.minor_right != 0) {
-    return diff.minor_right;
-  }
-
-  return 0;
-}
+int ShortVersionAndGameVersionEntry_CompareKey(
+    const struct ShortVersionAndGameVersionEntry* entry1,
+    const struct ShortVersionAndGameVersionEntry* entry2
+);
 
 #endif /* SGGLDKL_HELPER_SHORT_VERSION_H_ */
