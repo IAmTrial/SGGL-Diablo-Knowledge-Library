@@ -51,7 +51,6 @@ find_version_func_table[] = {
 };
 
 static enum GameVersion running_game_version = VERSION_UNKNOWN;
-static wchar_t* running_product_name;
 
 void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
   const wchar_t* kProductNameStr = L"ProductName";
@@ -60,6 +59,8 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
 
   struct ProductNameAndFindGameVersionFunctionEntry search_key;
   const struct ProductNameAndFindGameVersionFunctionEntry* search_result;
+
+  wchar_t* running_product_name;
 
   /* Initialize everything required for determining the game. */
   running_product_name = ExtractFileStringValue(
@@ -81,14 +82,22 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
           &ProductNameAndFindGameVersionFunctionEntry_CompareKey
       );
 
+  if (search_result == NULL) {
+    running_game_version = VERSION_UNKNOWN;
+
+    goto free_running_product_name;
+  }
+
   running_game_version = search_result->game_version_find_func_ptr(
       game_path,
       game_path_len
   );
+
+free_running_product_name:
+  free(running_product_name);
 }
 
 void DeinitGameVersion(void) {
-  free(running_product_name);
   running_game_version = 0;
 }
 
