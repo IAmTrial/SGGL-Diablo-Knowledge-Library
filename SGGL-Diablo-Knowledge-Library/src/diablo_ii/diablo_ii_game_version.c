@@ -37,6 +37,7 @@
 #include "../helper/encoding.h"
 #include "../helper/error_handling.h"
 #include "../helper/file_info.h"
+#include "../helper/file_path.h"
 #include "../helper/file_signature.h"
 #include "../helper/short_version.h"
 
@@ -195,30 +196,6 @@ static const struct GameVersionSignature k1001GameVersionSignatureTable[] = {
         DIABLO_II_1_00
     },
 };
-
-static wchar_t* GetAdjacentFilePath(
-    const wchar_t* diablo_file_path,
-    size_t diablo_file_path_len,
-    const wchar_t* adjacent_file_name,
-    size_t adjacent_file_name_len
-) {
-  wchar_t* adjacent_file_path;
-
-  adjacent_file_path = malloc(
-      (diablo_file_path_len + adjacent_file_name_len)
-          * sizeof(adjacent_file_path[0])
-  );
-
-  if (adjacent_file_path == NULL) {
-    ExitOnAllocationFailure();
-  }
-
-  wcscpy(adjacent_file_path, diablo_file_path);
-  PathRemoveFileSpecW(adjacent_file_path);
-  PathAppendW(adjacent_file_path, adjacent_file_name);
-
-  return adjacent_file_path;
-}
 
 static enum GameVersion DetermineGameVersionByData(
     const wchar_t* game_file_path,
