@@ -27,32 +27,56 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_HELPER_GAME_DATA_INFO_H_
-#define SGGLDKL_HELPER_GAME_DATA_INFO_H_
+#include "file_signature.h"
 
 #include <stddef.h>
-#include <wchar.h>
+#include <string.h>
 
-#include "../game_version_enum.h"
+int FileSignature_CompareAll(
+    const struct FileSignature* signature1,
+    const struct FileSignature* signature2
+) {
+  int file_path_diff;
+  int offset_diff;
+  int signature_diff;
 
-struct GameDataInfo {
-  const wchar_t* library_path;
-  int offset_value;
+  file_path_diff = wcscmp(
+      signature1->file_path,
+      signature2->file_path
+  );
 
-  enum GameVersion matching_version;
-  enum GameVersion non_matching_version;
+  if (file_path_diff != 0) {
+    return file_path_diff;
+  }
 
-  unsigned char expected_values[4];
-};
+  offset_diff = signature1->offset - signature2->offset;
 
-struct GameVersionAndGameDataInfoEntry {
-  enum GameVersion guessed_game_version;
-  struct GameDataInfo game_data_info;
-};
+  if (offset_diff != 0) {
+    return offset_diff;
+  }
 
-int GameVersionAndGameDataInfoEntry_CompareKey(
-    const struct GameVersionAndGameDataInfoEntry* entry1,
-    const struct GameVersionAndGameDataInfoEntry* entry2
-);
+  signature_diff = memcmp(
+      signature1->signature,
+      signature2->signature,
+      sizeof(signature1->signature)
+  );
 
-#endif /* SGGLDKL_HELPER_GAME_DATA_INFO_H_ */
+  return signature_diff;
+}
+
+int GameVersionSignature_CompareSignature(
+    const struct GameVersionSignature* entry1,
+    const struct GameVersionSignature* entry2
+) {
+  return FileSignature_CompareAll(
+      &entry1->file_signature,
+      &entry2->file_signature
+  );
+}
+
+int GuessCorrectionSignature_CompareGuess(
+    const struct GuessCorrectionSignature* entry1,
+    const struct GuessCorrectionSignature* entry2
+) {
+  return entry1->guessed_version - entry2->guessed_version;
+}

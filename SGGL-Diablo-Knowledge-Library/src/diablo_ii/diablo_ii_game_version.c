@@ -37,7 +37,7 @@
 #include "../helper/encoding.h"
 #include "../helper/error_handling.h"
 #include "../helper/file_info.h"
-#include "../helper/game_data_info.h"
+#include "../helper/file_signature.h"
 #include "../helper/short_version.h"
 
 /*
@@ -135,26 +135,27 @@ kGameFileVersionsToGameVersion[] = {
     { { 1, 14, 3, 71 }, DIABLO_II_1_14D }
 };
 
-static const struct GameVersionAndGameDataInfoEntry
-kGameDataInfoTable[] = {
+static const struct GuessCorrectionSignature kGuessCorrectionTable[] = {
     {
         DIABLO_II_1_06B,
         {
-            L"storm.dll",
-            0xF0,
-            DIABLO_II_1_06,
-            DIABLO_II_1_06B,
-            { 0x43, 0x0C, 0xD6, 0x3A }
+            {
+                L"storm.dll",
+                0xF0,
+                { 0x43, 0x0C, 0xD6, 0x3A }
+            },
+            DIABLO_II_1_06
         }
     },
     {
         DIABLO_II_1_07,
         {
-            L"storm.dll",
-            0xF8,
-            DIABLO_II_1_07_BETA,
-            DIABLO_II_1_07,
-            { 0x32, 0xA6, 0xDC, 0x3A }
+            {
+                L"storm.dll",
+                0xF8,
+                { 0x32, 0xA6, 0xDC, 0x3A }
+            },
+            DIABLO_II_1_07_BETA
         }
     }
 };
@@ -188,12 +189,19 @@ static enum GameVersion DetermineGameVersionByData(
     size_t game_file_path_len,
     enum GameVersion guessed_game_version
 ) {
-  const struct GameVersionAndGameDataInfoEntry search_key = {
+  const struct GuessCorrectionSignature search_key = {
       guessed_game_version
   };
 
-  struct GameVersionAndGameDataInfoEntry* search_result;
-  struct GameDataInfo* game_data_info;
+  const struct GuessCorrectionSignature* search_result;
+  const struct GameVersionSignature* game_version_signature;
+
+  unsigned char check_buffer[4];
+  size_t actual_num_check_bytes;
+
+  const size_t kExpectedNumCheckBytes = sizeof(check_buffer);
+  const size_t kExpectedNumCheckElems =
+      kExpectedNumCheckBytes / sizeof(check_buffer[0]);
 
   wchar_t* adjacent_file_path;
   FILE* game_file_stream;
@@ -201,18 +209,15 @@ static enum GameVersion DetermineGameVersionByData(
   int is_fseek_fail;
   int is_fclose_fail;
 
-  unsigned char check_buffer[4];
-  size_t num_check_bytes;
-
   int compare_result;
 
   /* Search the table for the data info entry. */
-  search_result = (struct GameVersionAndGameDataInfoEntry*) bsearch(
+  search_result = (const struct GuessCorrectionSignature*) bsearch(
       &search_key,
-      kGameDataInfoTable,
-      sizeof(kGameDataInfoTable) / sizeof(kGameDataInfoTable[0]),
-      sizeof(kGameDataInfoTable[0]),
-      &GameVersionAndGameDataInfoEntry_CompareKey
+      kGuessCorrectionTable,
+      sizeof(kGuessCorrectionTable) / sizeof(kGuessCorrectionTable[0]),
+      sizeof(kGuessCorrectionTable[0]),
+      &GuessCorrectionSignature_CompareGuess
   );
 
   /* It's not found, so the initial guess was likely correct. */
@@ -220,14 +225,14 @@ static enum GameVersion DetermineGameVersionByData(
     return guessed_game_version;
   }
 
-  game_data_info = &search_result->game_data_info;
+  game_version_signature = &search_result->game_version_signature;
 
   /* Open the file for reading. */
   adjacent_file_path = GetAdjacentFilePath(
       game_file_path,
-      wcslen(search_result->game_data_info.library_path),
-      game_data_info->library_path,
-      wcslen(game_data_info->library_path)
+      game_file_path_len,
+      game_version_signature->file_signature.file_path,
+      wcslen(game_version_signature->file_signature.file_path)
   );
 
   game_file_stream = _wfopen(adjacent_file_path, L"rb");
@@ -242,7 +247,7 @@ static enum GameVersion DetermineGameVersionByData(
   /* Seek to the pos */
   is_fseek_fail = fseek(
       game_file_stream,
-      game_data_info->offset_value,
+      game_version_signature->file_signature.offset,
       SEEK_SET
   );
 
@@ -253,14 +258,14 @@ static enum GameVersion DetermineGameVersionByData(
     );
   }
 
-  num_check_bytes = fread(
+  actual_num_check_bytes = fread(
       check_buffer,
       sizeof(check_buffer[0]),
-      sizeof(check_buffer) / sizeof(check_buffer[0]),
+      kExpectedNumCheckElems,
       game_file_stream
   );
 
-  if (num_check_bytes != game_data_info->offset_value) {
+  if (actual_num_check_bytes != kExpectedNumCheckElems) {
     ExitOnGeneralFailure(
         L"Number of check bytes does not match.",
         L"Game Version Check Failure"
@@ -282,13 +287,13 @@ free_adjacent_file_path:
   /* Check the bytes for each possible version. */
   compare_result = memcmp(
       check_buffer,
-      game_data_info->expected_values,
-      sizeof(game_data_info->expected_values)
+      game_version_signature->file_signature.signature,
+      sizeof(game_version_signature->file_signature.signature)
   );
 
   return (compare_result == 0)
-      ? game_data_info->matching_version
-      : game_data_info->non_matching_version;
+      ? game_version_signature->game_version
+      : guessed_game_version;
 }
 
 static enum GameVersion Determine1001GameVersionByData(
@@ -305,7 +310,11 @@ static enum GameVersion Determine1001GameVersionByData(
   int is_fclose_fail;
 
   unsigned char check_buffer[4];
-  size_t num_check_bytes;
+  size_t actual_num_check_bytes;
+
+  const size_t kExpectedNumCheckBytes = sizeof(check_buffer);
+  const size_t kExpectedNumCheckElems =
+      kExpectedNumCheckBytes / sizeof(check_buffer[0]);
 
   /* Open the file for reading. */
   wchar_t* storm_file_path = GetAdjacentFilePath(
@@ -338,20 +347,22 @@ static enum GameVersion Determine1001GameVersionByData(
     );
   }
 
-  num_check_bytes = fread(
+  /* Read the bytes that will be checked. */
+  actual_num_check_bytes = fread(
       check_buffer,
       sizeof(check_buffer[0]),
-      sizeof(check_buffer) / sizeof(check_buffer[0]),
+      kExpectedNumCheckBytes,
       game_file_stream
   );
 
-  if (num_check_bytes != CHECK_POSITION) {
+  if (actual_num_check_bytes != kExpectedNumCheckElems) {
     ExitOnGeneralFailure(
         L"Number of check bytes does not match.",
         L"Game Version Check Failure"
     );
   }
 
+  /* Close the file, now that the bytes have been read. */
   is_fclose_fail = fclose(game_file_stream);
 
   if (is_fclose_fail) {
@@ -361,16 +372,17 @@ static enum GameVersion Determine1001GameVersionByData(
     );
   }
 
+free_storm_file_path:
   free(storm_file_path);
 
   /* Check the bytes for each possible version. */
-  if (memcmp(check_buffer, "\xB7\x70\xD0\x38", 4) == 0) {
+  if (memcmp(check_buffer, "\xB7\x70\xD0\x38", kExpectedNumCheckBytes) == 0) {
     return DIABLO_II_1_02_BETA;
-  } else if (memcmp(check_buffer, "\x79\xBD\x20\x39", 4) == 0) {
+  } else if (memcmp(check_buffer, "\x79\xBD\x20\x39", kExpectedNumCheckBytes) == 0) {
     return DIABLO_II_1_02_STRESS_TEST_BETA;
-  } else if (memcmp(check_buffer, "\xBC\xC7\x2E\x39", 4) == 0) {
+  } else if (memcmp(check_buffer, "\xBC\xC7\x2E\x39", kExpectedNumCheckBytes) == 0) {
     return DIABLO_II_1_00;
-  } else if (memcmp(check_buffer, "\x25\x47\x52\x39", 4) == 0) {
+  } else if (memcmp(check_buffer, "\x25\x47\x52\x39", kExpectedNumCheckBytes) == 0) {
     return DIABLO_II_1_01;
   } else {
     return VERSION_UNKNOWN;

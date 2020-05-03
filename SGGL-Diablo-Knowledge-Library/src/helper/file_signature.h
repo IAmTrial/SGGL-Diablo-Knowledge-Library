@@ -27,11 +27,42 @@
  *  to convey the resulting work.
  */
 
-#include "game_data_info.h"
+#ifndef SGGLDKL_HELPER_FILE_SIGNATURE_H_
+#define SGGLDKL_HELPER_FILE_SIGNATURE_H_
 
-int GameVersionAndGameDataInfoEntry_CompareKey(
-    const struct GameVersionAndGameDataInfoEntry* entry1,
-    const struct GameVersionAndGameDataInfoEntry* entry2
-) {
-  return entry1->guessed_game_version - entry2->guessed_game_version;
-}
+#include <wchar.h>
+
+#include "../game_version_enum.h"
+
+struct FileSignature {
+  const wchar_t* file_path;
+  int offset;
+  unsigned char signature[4];
+};
+
+struct GameVersionSignature {
+  struct FileSignature file_signature;
+  enum GameVersion game_version;
+};
+
+struct GuessCorrectionSignature {
+  enum GameVersion guessed_version;
+  struct GameVersionSignature game_version_signature;
+};
+
+int FileSignature_CompareAll(
+    const struct FileSignature* signature1,
+    const struct FileSignature* signature2
+);
+
+int GameVersionSignature_CompareSignature(
+    const struct GameVersionSignature* entry1,
+    const struct GameVersionSignature* entry2
+);
+
+int GuessCorrectionSignature_CompareGuess(
+    const struct GuessCorrectionSignature* entry1,
+    const struct GuessCorrectionSignature* entry2
+);
+
+#endif /* SGGLDKL_HELPER_FILE_SIGNATURE_H_ */
