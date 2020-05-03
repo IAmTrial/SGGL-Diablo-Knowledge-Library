@@ -30,6 +30,7 @@
 #include "../include/dll_exports.h"
 
 #include "game_version.h"
+#include "game_version_printer.h"
 
 void Knowledge_Init(
     const wchar_t* game_path,
@@ -46,6 +47,7 @@ void Knowledge_Deinit(
 }
 
 void Knowledge_PrintGameInfo(void) {
+  PrintGameVersion();
 }
 
 int Knowledge_InjectLibrariesToProcesses(
