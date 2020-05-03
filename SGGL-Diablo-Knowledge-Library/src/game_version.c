@@ -29,7 +29,6 @@
 
 #include "game_version.h"
 
-#include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
 
