@@ -251,5 +251,6 @@ void PrintGameVersion(void) {
   game_name = GetGameName(running_game_version);
   game_version_text = GetVersionText(running_game_version);
 
-  printf("%s %s \n", game_name, game_version_text);
+  printf("Game information: \n");
+  printf("%s %s \n\n", game_name, game_version_text);
 }
