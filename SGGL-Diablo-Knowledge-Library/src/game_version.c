@@ -35,7 +35,7 @@
 
 #include "diablo/diablo_game_version.h"
 #include "diablo_ii/diablo_ii_game_version.h"
-#include "error_handling.h"
+#include "helper/error_handling.h"
 #include "helper/game_version_finder.h"
 
 /* Struct taken from Microsoft's example. */

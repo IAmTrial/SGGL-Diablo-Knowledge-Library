@@ -34,8 +34,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../encoding.h"
-#include "../error_handling.h"
+#include "../helper/encoding.h"
+#include "../helper/error_handling.h"
 #include "../helper/file_info.h"
 #include "../helper/game_data_info.h"
 #include "../helper/short_version.h"

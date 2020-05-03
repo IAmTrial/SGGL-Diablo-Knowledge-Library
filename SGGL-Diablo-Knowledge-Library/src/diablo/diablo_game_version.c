@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <windows.h>
 
-#include "../error_handling.h"
+#include "../helper/error_handling.h"
 #include "../helper/file_info.h"
 #include "../helper/short_version.h"
 
