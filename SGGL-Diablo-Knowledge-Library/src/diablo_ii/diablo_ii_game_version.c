@@ -276,6 +276,7 @@ static enum GameVersion DetermineGameVersionByData(
     );
   }
 
+free_adjacent_file_path:
   free(adjacent_file_path);
 
   /* Check the bytes for each possible version. */
@@ -396,6 +397,10 @@ static enum GameVersion SearchGameFileInfoTable(
       sizeof(kGameFileVersionsToGameVersion[0]),
       &ShortVersionAndGameVersionEntry_CompareKey
   );
+
+  if (search_result == NULL) {
+    return VERSION_UNKNOWN;
+  }
 
   return search_result->game_version;
 }
