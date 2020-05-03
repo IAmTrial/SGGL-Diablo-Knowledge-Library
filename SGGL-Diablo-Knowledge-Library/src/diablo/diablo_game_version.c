@@ -29,90 +29,95 @@
 
 #include "diablo_game_version.h"
 
+#include "../helper/short_version.h"
+
+/*
+* The order of the entries should be in numerical order of significant
+* versions, due to the reliance on bsearch.
+*/
+
+static const struct ShortVersionAndGameVersionEntry
+kDiabloProductVersionsToGameVersion[] = {
+    /* 1, 0, 8, 1 */
+    { { 1, 0, 8, 1 }, DIABLO_1_08 },
+
+    /* 1, 0, 9, 1 */
+    { { 1, 0, 9, 1 }, DIABLO_1_09 },
+
+    /* 1, 0, 9, 2 */
+    { { 1, 0, 9, 1 }, DIABLO_1_09B },
+
+    /* 96, 12, 26, 3 */
+    { { 96, 12, 26, 3 }, DIABLO_1_00 },
+
+    /* 97, 4, 1, 1 */
+    { { 97, 4, 1, 1 }, DIABLO_1_03 },
+
+    /* 97, 5, 23, 1 */
+    { { 97, 5, 23, 1 }, DIABLO_1_04 }
+};
+
+static const struct ShortVersionAndGameVersionEntry
+kStormFileVersionsToGameVersion[] = {
+    /* 1998.4.15.1 */
+    { { 1998, 4, 15, 1 }, DIABLO_1_05 },
+
+    /* 1998.8.11.1 */
+    { { 1998, 8, 11, 1 }, DIABLO_1_07 }
+};
+
 enum GameVersion Diablo_DetermineGameVersion(
     const VS_FIXEDFILEINFO* diablo_file_info,
     const VS_FIXEDFILEINFO* storm_file_info
 ) {
-  DWORD diablo_product_version_major_num_left =
-      (diablo_file_info->dwProductVersionMS >> 16) & 0xFFFF;
-  DWORD diablo_product_version_major_num_right =
-      (diablo_file_info->dwProductVersionMS >> 0) & 0xFFFF;
-  DWORD diablo_product_version_minor_num_left =
-      (diablo_file_info->dwProductVersionLS >> 16) & 0xFFFF;
-  DWORD diablo_product_version_minor_num_right =
-      (diablo_file_info->dwProductVersionLS >> 0) & 0xFFFF;
+  struct ShortVersionAndGameVersionEntry* search_result;
 
-  DWORD storm_file_version_major_num_left =
-      (storm_file_info->dwFileVersionMS >> 16) & 0xFFFF;
-  DWORD storm_file_version_major_num_right =
-      (storm_file_info->dwFileVersionMS >> 0) & 0xFFFF;
-  DWORD storm_file_version_minor_num_left =
-      (storm_file_info->dwFileVersionLS >> 16) & 0xFFFF;
-  DWORD storm_file_version_minor_num_right =
-      (storm_file_info->dwFileVersionLS >> 0) & 0xFFFF;
+  struct ShortVersionAndGameVersionEntry diablo_product_version_search_key = {
+      {
+          (diablo_file_info->dwProductVersionMS >> 16) & 0xFFFF,
+          (diablo_file_info->dwProductVersionMS >> 0) & 0xFFFF,
+          (diablo_file_info->dwProductVersionLS >> 16) & 0xFFFF,
+          (diablo_file_info->dwProductVersionLS >> 0) & 0xFFFF
+      },
+      VERSION_UNKNOWN
+  };
 
-  if (diablo_product_version_major_num_left == 96) {
-    if (diablo_product_version_major_num_right == 12) {
-      if (diablo_product_version_minor_num_left == 26) {
-        if (diablo_product_version_minor_num_right == 3) {
-          /* 96, 12, 26, 3 */
-          return DIABLO_1_00;
-        }
-      }
-    }
-  } else if (diablo_product_version_major_num_left == 97) {
-    if (diablo_product_version_major_num_right == 4) {
-      if (diablo_product_version_minor_num_left == 1) {
-        if (diablo_product_version_minor_num_right == 1) {
-          /* 97, 4, 1, 1 */
-          return DIABLO_1_03;
-        }
-      }
-    } else if (diablo_product_version_major_num_right == 5) {
-      if (diablo_product_version_minor_num_left == 23) {
-        if (diablo_product_version_minor_num_right == 1) {
-          /* 97, 5, 23, 1 */
-          return DIABLO_1_04;
-        }
-      }
-    }
+  struct ShortVersionAndGameVersionEntry storm_file_version_search_key = {
+      {
+          (storm_file_info->dwFileVersionMS >> 16) & 0xFFFF,
+          (storm_file_info->dwFileVersionMS >> 0) & 0xFFFF,
+          (storm_file_info->dwFileVersionLS >> 16) & 0xFFFF,
+          (storm_file_info->dwFileVersionLS >> 0) & 0xFFFF
+      },
+      VERSION_UNKNOWN
+  };
+
+  /* Search on the game executable product version. */
+  search_result = (struct ShortVersionAndGameVersionEntry*) bsearch(
+      &diablo_product_version_search_key,
+      kDiabloProductVersionsToGameVersion,
+      sizeof(kDiabloProductVersionsToGameVersion)
+          / sizeof(kDiabloProductVersionsToGameVersion[0]),
+      sizeof(kDiabloProductVersionsToGameVersion[0]),
+      &ShortVersionAndGameVersionEntry_CompareKey
+  );
+
+  if (search_result != NULL) {
+    return search_result->game_version;
   }
 
-  if (storm_file_version_major_num_left == 1998) {
-    if (storm_file_version_major_num_right == 4) {
-      if (storm_file_version_minor_num_left == 15) {
-        if (storm_file_version_minor_num_right == 1) {
-          /* 1998.4.15.1 */
-          return DIABLO_1_05;
-        }
-      }
-    } else if (storm_file_version_major_num_right == 8) {
-      if (storm_file_version_minor_num_left == 11) {
-        if (storm_file_version_minor_num_right == 1) {
-          /* 1998.8.11.1 */
-          return DIABLO_1_07;
-        }
-      }
-    }
-  }
+  /* Search on the Storm.dll library. */
+  search_result = (struct ShortVersionAndGameVersionEntry*) bsearch(
+      &storm_file_version_search_key,
+      kStormFileVersionsToGameVersion,
+      sizeof(kStormFileVersionsToGameVersion)
+          / sizeof(kStormFileVersionsToGameVersion[0]),
+      sizeof(kStormFileVersionsToGameVersion[0]),
+      &ShortVersionAndGameVersionEntry_CompareKey
+  );
 
-  if (diablo_product_version_major_num_left == 1) {
-    if (diablo_product_version_major_num_right == 0) {
-      if (diablo_product_version_minor_num_left == 8) {
-        if (diablo_product_version_minor_num_right == 1) {
-          /* 1, 0, 8, 1 */
-          return DIABLO_1_08;
-        }
-      } else if (diablo_product_version_minor_num_left == 9) {
-        if (diablo_product_version_minor_num_right == 1) {
-          /* 1, 0, 9, 1 */
-          return DIABLO_1_09;
-        } else if (diablo_product_version_minor_num_right == 2) {
-          /* 1, 0, 9, 2 */
-          return DIABLO_1_09B;
-        }
-      }
-    }
+  if (search_result != NULL) {
+    return search_result->game_version;
   }
 
   return VERSION_UNKNOWN;
