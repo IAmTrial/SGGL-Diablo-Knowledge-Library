@@ -30,13 +30,14 @@
 #ifndef SGGLDKL_DIABLO_DIABLO_GAME_VERSION_H_
 #define SGGLDKL_DIABLO_DIABLO_GAME_VERSION_H_
 
-#include <windows.h>
+#include <stddef.h>
+#include <wchar.h>
 
 #include "../game_version_enum.h"
 
-enum GameVersion Diablo_DetermineGameVersion(
-    const VS_FIXEDFILEINFO* diablo_file_info,
-    const VS_FIXEDFILEINFO* storm_file_info
+enum GameVersion Diablo_FindGameVersion(
+    const wchar_t* diablo_file_path,
+    size_t diablo_file_path_len
 );
 
 #endif /* SGGLDKL_DIABLO_DIABLO_GAME_VERSION_H_ */
