@@ -222,6 +222,9 @@ wchar_t* ExtractFileStringValue(
   file_string_value = malloc(file_string_value_size);
   wcscpy(file_string_value, temp_file_string_value);
 
+free_file_string_sub_block:
+  free(file_string_sub_block);
+
 free_file_version_info:
   free(file_version_info);
 
