@@ -30,12 +30,19 @@
 #ifndef SGGLDKL_HELPER_FILE_INFO_H_
 #define SGGLDKL_HELPER_FILE_INFO_H_
 
+#include <stddef.h>
 #include <wchar.h>
 #include <windows.h>
 
 void ExtractFileInfo(
     VS_FIXEDFILEINFO* file_info,
     const wchar_t* file_path
+);
+
+wchar_t* ExtractFileStringValue(
+    const wchar_t* game_path,
+    const wchar_t* string_name,
+    size_t string_name_len
 );
 
 #endif /* SGGLDKL_HELPER_FILE_INFO_H_ */
