@@ -160,6 +160,42 @@ static const struct GuessCorrectionSignature kGuessCorrectionTable[] = {
     }
 };
 
+/* The elements need to be ordered by file path, offset, then signature. */
+static const struct GameVersionSignature k1001GameVersionSignatureTable[] = {
+    {
+        {
+            L"storm.dll",
+            0xF0,
+            { 0x25, 0x47, 0x52, 0x39 }
+        },
+        DIABLO_II_1_01
+    },
+    {
+        {
+            L"storm.dll",
+            0xF0,
+            { 0x79, 0xBD, 0x20, 0x39 }
+        },
+        DIABLO_II_1_02_STRESS_TEST_BETA
+    },
+    {
+        {
+            L"storm.dll",
+            0xF0,
+            { 0xB7, 0x70, 0xD0, 0x38 }
+        },
+        DIABLO_II_1_02_BETA
+    },
+    {
+        {
+            L"storm.dll",
+            0xF0,
+            { 0xBC, 0xC7, 0x2E, 0x39 }
+        },
+        DIABLO_II_1_00
+    },
+};
+
 static wchar_t* GetAdjacentFilePath(
     const wchar_t* diablo_file_path,
     size_t diablo_file_path_len,
@@ -304,24 +340,31 @@ static enum GameVersion Determine1001GameVersionByData(
     CHECK_POSITION = 0xF0
   };
 
+  const wchar_t* kStormFileName = L"storm.dll";
+  const size_t kStormFileNameLen =
+      (sizeof(L"storm.dll") / sizeof(L""[0])) - 1;
+
+  struct GameVersionSignature search_key;
+  const struct GameVersionSignature* search_result;
+
+  const size_t kExpectedNumCheckBytes =
+      sizeof(search_key.file_signature.signature);
+  const size_t kExpectedNumCheckElems = kExpectedNumCheckBytes
+      / sizeof(search_key.file_signature.signature[0]);
+
   FILE* game_file_stream;
 
   int is_fseek_fail;
   int is_fclose_fail;
 
-  unsigned char check_buffer[4];
   size_t actual_num_check_bytes;
-
-  const size_t kExpectedNumCheckBytes = sizeof(check_buffer);
-  const size_t kExpectedNumCheckElems =
-      kExpectedNumCheckBytes / sizeof(check_buffer[0]);
 
   /* Open the file for reading. */
   wchar_t* storm_file_path = GetAdjacentFilePath(
       game_file_path,
       game_file_path_len,
-      L"storm.dll",
-      (sizeof(L"storm.dll") / sizeof(L""[0])) - 1
+      kStormFileName,
+      kStormFileNameLen
   );
 
   game_file_stream = _wfopen(storm_file_path, L"rb");
@@ -349,8 +392,8 @@ static enum GameVersion Determine1001GameVersionByData(
 
   /* Read the bytes that will be checked. */
   actual_num_check_bytes = fread(
-      check_buffer,
-      sizeof(check_buffer[0]),
+      search_key.file_signature.signature,
+      sizeof(search_key.file_signature.signature[0]),
       kExpectedNumCheckBytes,
       game_file_stream
   );
@@ -376,17 +419,23 @@ free_storm_file_path:
   free(storm_file_path);
 
   /* Check the bytes for each possible version. */
-  if (memcmp(check_buffer, "\xB7\x70\xD0\x38", kExpectedNumCheckBytes) == 0) {
-    return DIABLO_II_1_02_BETA;
-  } else if (memcmp(check_buffer, "\x79\xBD\x20\x39", kExpectedNumCheckBytes) == 0) {
-    return DIABLO_II_1_02_STRESS_TEST_BETA;
-  } else if (memcmp(check_buffer, "\xBC\xC7\x2E\x39", kExpectedNumCheckBytes) == 0) {
-    return DIABLO_II_1_00;
-  } else if (memcmp(check_buffer, "\x25\x47\x52\x39", kExpectedNumCheckBytes) == 0) {
-    return DIABLO_II_1_01;
-  } else {
+  search_key.file_signature.file_path = kStormFileName;
+  search_key.file_signature.offset = CHECK_POSITION;
+
+  search_result = (const struct GameVersionSignature*) bsearch(
+      &search_key,
+      k1001GameVersionSignatureTable,
+      sizeof(k1001GameVersionSignatureTable)
+          / sizeof(k1001GameVersionSignatureTable[0]),
+      sizeof(k1001GameVersionSignatureTable[0]),
+      &GameVersionSignature_CompareSignature
+  );
+
+  if (search_result == NULL) {
     return VERSION_UNKNOWN;
   }
+
+  return search_result->game_version;
 }
 
 static enum GameVersion SearchGameFileInfoTable(
