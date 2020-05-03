@@ -72,6 +72,31 @@ kStormFileVersionsToGameVersion[] = {
     { { 1998, 8, 11, 1 }, DIABLO_1_07 }
 };
 
+static wchar_t* GetStormPath(
+    const wchar_t* diablo_file_path,
+    size_t diablo_file_path_len
+) {
+  const wchar_t* kStormDllFileName = L"storm.dll";
+  const size_t kStormDllFileNameLen =
+      (sizeof(L"storm.dll") / sizeof(kStormDllFileName[0])) - 1;
+
+  wchar_t* storm_file_path;
+
+  storm_file_path = malloc(
+      (diablo_file_path_len + kStormDllFileNameLen) * sizeof(storm_file_path[0])
+  );
+
+  if (storm_file_path == NULL) {
+    ExitOnAllocationFailure();
+  }
+
+  wcscpy(storm_file_path, diablo_file_path);
+  PathRemoveFileSpecW(storm_file_path);
+  PathAppendW(storm_file_path, kStormDllFileName);
+
+  return storm_file_path;
+}
+
 static enum GameVersion SearchGameVersionTable(
     const VS_FIXEDFILEINFO* diablo_file_info,
     const VS_FIXEDFILEINFO* storm_file_info
@@ -127,31 +152,6 @@ static enum GameVersion SearchGameVersionTable(
   }
 
   return VERSION_UNKNOWN;
-}
-
-static wchar_t* GetStormPath(
-    const wchar_t* diablo_file_path,
-    size_t diablo_file_path_len
-) {
-  const wchar_t* kStormDllFileName = L"storm.dll";
-  const size_t kStormDllFileNameLen =
-      (sizeof(L"storm.dll") / sizeof(kStormDllFileName[0])) - 1;
-
-  wchar_t* storm_file_path;
-
-  storm_file_path = malloc(
-      (diablo_file_path_len + kStormDllFileNameLen) * sizeof(storm_file_path[0])
-  );
-
-  if (storm_file_path == NULL) {
-    ExitOnAllocationFailure();
-  }
-
-  wcscpy(storm_file_path, diablo_file_path);
-  PathRemoveFileSpecW(storm_file_path);
-  PathAppendW(storm_file_path, kStormDllFileName);
-
-  return storm_file_path;
 }
 
 enum GameVersion Diablo_FindGameVersion(
