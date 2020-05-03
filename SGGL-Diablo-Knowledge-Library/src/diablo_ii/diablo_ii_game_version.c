@@ -329,6 +329,7 @@ static enum GameVersion Determine1001GameVersionByData(
   const size_t kExpectedNumCheckElems = kExpectedNumCheckBytes
       / sizeof(search_key.file_signature.signature[0]);
 
+  wchar_t* storm_file_path;
   FILE* game_file_stream;
 
   int is_fseek_fail;
@@ -337,7 +338,7 @@ static enum GameVersion Determine1001GameVersionByData(
   size_t actual_num_check_bytes;
 
   /* Open the file for reading. */
-  wchar_t* storm_file_path = GetAdjacentFilePath(
+  storm_file_path = GetAdjacentFilePath(
       game_file_path,
       game_file_path_len,
       kStormFileName,
