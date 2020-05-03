@@ -393,9 +393,6 @@ static enum GameVersion Determine1001GameVersionByData(
     );
   }
 
-free_storm_file_path:
-  free(storm_file_path);
-
   /* Check the bytes for each possible version. */
   search_key.file_signature.file_path = kStormFileName;
   search_key.file_signature.offset = CHECK_POSITION;
@@ -412,6 +409,9 @@ free_storm_file_path:
   if (search_result == NULL) {
     return VERSION_UNKNOWN;
   }
+
+free_storm_file_path:
+  free(storm_file_path);
 
   return search_result->game_version;
 }
