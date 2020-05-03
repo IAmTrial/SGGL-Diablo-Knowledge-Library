@@ -29,17 +29,20 @@
 
 #include "../include/dll_exports.h"
 
+#include "game_version.h"
+
 void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
 ) {
-
+  InitGameVersion(game_path, game_path_len);
 }
 
 void Knowledge_Deinit(
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
 ) {
+  DeinitGameVersion();
 }
 
 void Knowledge_PrintGameInfo(void) {
