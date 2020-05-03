@@ -59,6 +59,7 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
   const size_t kProductNameLen =
       (sizeof(L"ProductName") / sizeof(kProductNameStr[0])) - 1;
 
+  struct ProductNameAndFindGameVersionFunctionEntry search_key;
   const struct ProductNameAndFindGameVersionFunctionEntry* search_result;
 
   /* Initialize everything required for determining the game. */
@@ -68,10 +69,12 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
       kProductNameLen
   );
 
+  search_key.product_name = running_product_name;
+
   /* Determine what to do based on the reported game name. */
   search_result =
       (const struct ProductNameAndFindGameVersionFunctionEntry*) bsearch(
-          running_product_name,
+          &search_key,
           find_version_func_table,
           sizeof(find_version_func_table)
               / sizeof(find_version_func_table[0]),
