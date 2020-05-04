@@ -48,6 +48,8 @@ find_version_func_table[] = {
     { L"Blizzard Entertainment Diablo", &Diablo_FindGameVersion },
     { L"BLizzard North Diablo 2", &Diablo_II_FindGameVersion },
     { L"Blizzard North Diablo II", &Diablo_II_FindGameVersion },
+    { L"Diablo II", &Diablo_II_FindGameVersion },
+    { L"Diablo II : Lord of Destruction", &Diablo_II_FindGameVersion }
 };
 
 static enum GameVersion running_game_version = VERSION_UNKNOWN;
