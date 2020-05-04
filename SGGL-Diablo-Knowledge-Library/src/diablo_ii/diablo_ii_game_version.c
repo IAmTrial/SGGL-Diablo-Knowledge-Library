@@ -29,12 +29,10 @@
 
 #include "diablo_ii_game_version.h"
 
-#include <shlwapi.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "../helper/encoding.h"
 #include "../helper/error_handling.h"
 #include "../helper/file_info.h"
 #include "../helper/file_path.h"
