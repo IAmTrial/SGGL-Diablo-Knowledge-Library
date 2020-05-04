@@ -27,53 +27,17 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_HELPER_SHORT_VERSION_H_
-#define SGGLDKL_HELPER_SHORT_VERSION_H_
+#ifndef SGGLDKL_HELLFIRE_HELLFIRE_GAME_VERSION_H_
+#define SGGLDKL_HELLFIRE_HELLFIRE_GAME_VERSION_H_
 
+#include <stddef.h>
 #include <wchar.h>
-#include <windows.h>
 
 #include "../game_version_enum.h"
 
-struct ShortVersion {
-  DWORD major_left;
-  DWORD major_right;
-  DWORD minor_left;
-  DWORD minor_right;
-};
-
-struct ShortVersionString {
-  const wchar_t* version_str;
-};
-
-struct ShortVersionAndGameVersionEntry {
-  struct ShortVersion short_version;
-  enum GameVersion game_version;
-};
-
-struct ShortVersionStringAndGameVersionEntry {
-  struct ShortVersionString short_version_str;
-  enum GameVersion game_version;
-};
-
-int ShortVersion_CompareAll(
-    const struct ShortVersion* version1,
-    const struct ShortVersion* version2
+enum GameVersion Hellfire_FindGameVersion(
+    const wchar_t* hellfire_file_path,
+    size_t hellfire_file_path_len
 );
 
-int ShortVersionString_CompareAll(
-    const struct ShortVersionString* version_str1,
-    const struct ShortVersionString* version_str2
-);
-
-int ShortVersionAndGameVersionEntry_CompareKey(
-    const struct ShortVersionAndGameVersionEntry* entry1,
-    const struct ShortVersionAndGameVersionEntry* entry2
-);
-
-int ShortVersionStringAndGameVersionEntry_CompareKey(
-    const struct ShortVersionStringAndGameVersionEntry* entry1,
-    const struct ShortVersionStringAndGameVersionEntry* entry2
-);
-
-#endif /* SGGLDKL_HELPER_SHORT_VERSION_H_ */
+#endif /* SGGLDKL_HELLFIRE_HELLFIRE_GAME_VERSION_H_ */

@@ -58,6 +58,13 @@ int ShortVersion_CompareAll(
   return 0;
 }
 
+int ShortVersionString_CompareAll(
+    const struct ShortVersionString* version_str1,
+    const struct ShortVersionString* version_str2
+) {
+  return wcscmp(version_str1->version_str, version_str2->version_str);
+}
+
 int ShortVersionAndGameVersionEntry_CompareKey(
     const struct ShortVersionAndGameVersionEntry* entry1,
     const struct ShortVersionAndGameVersionEntry* entry2
@@ -65,5 +72,15 @@ int ShortVersionAndGameVersionEntry_CompareKey(
   return ShortVersion_CompareAll(
       &entry1->short_version,
       &entry2->short_version
+  );
+}
+
+int ShortVersionStringAndGameVersionEntry_CompareKey(
+    const struct ShortVersionStringAndGameVersionEntry* entry1,
+    const struct ShortVersionStringAndGameVersionEntry* entry2
+) {
+  return ShortVersionString_CompareAll(
+      &entry1->short_version_str,
+      &entry2->short_version_str
   );
 }

@@ -34,6 +34,7 @@
 
 #include "diablo/diablo_game_version.h"
 #include "diablo_ii/diablo_ii_game_version.h"
+#include "hellfire/hellfire_game_version.h"
 #include "helper/error_handling.h"
 #include "helper/file_info.h"
 #include "helper/game_version_finder.h"
@@ -49,7 +50,8 @@ find_version_func_table[] = {
     { L"BLizzard North Diablo 2", &Diablo_II_FindGameVersion },
     { L"Blizzard North Diablo II", &Diablo_II_FindGameVersion },
     { L"Diablo II", &Diablo_II_FindGameVersion },
-    { L"Diablo II : Lord of Destruction", &Diablo_II_FindGameVersion }
+    { L"Diablo II : Lord of Destruction", &Diablo_II_FindGameVersion },
+    { L"Synergistic Software Hellfire", &Hellfire_FindGameVersion }
 };
 
 static enum GameVersion running_game_version = VERSION_UNKNOWN;
