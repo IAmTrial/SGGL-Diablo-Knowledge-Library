@@ -29,12 +29,11 @@
 
 #include "diablo_game_version.h"
 
-#include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
 
-#include "../helper/error_handling.h"
 #include "../helper/file_info.h"
+#include "../helper/file_path.h"
 #include "../helper/short_version.h"
 
 /*
@@ -71,32 +70,6 @@ kStormFileVersionsToGameVersion[] = {
     /* 1998.8.11.1 */
     { { 1998, 8, 11, 1 }, DIABLO_1_07 }
 };
-
-static wchar_t* GetStormPath(
-    const wchar_t* diablo_file_path,
-    size_t diablo_file_path_len
-) {
-  const wchar_t* kStormDllFileName = L"storm.dll";
-  const size_t kStormDllFileNameLen =
-      (sizeof(L"storm.dll") / sizeof(kStormDllFileName[0])) - 1;
-
-  wchar_t* storm_file_path;
-
-  storm_file_path = malloc(
-      (diablo_file_path_len + kStormDllFileNameLen)
-          * sizeof(storm_file_path[0])
-  );
-
-  if (storm_file_path == NULL) {
-    ExitOnAllocationFailure();
-  }
-
-  wcscpy(storm_file_path, diablo_file_path);
-  PathRemoveFileSpecW(storm_file_path);
-  PathAppendW(storm_file_path, kStormDllFileName);
-
-  return storm_file_path;
-}
 
 static enum GameVersion SearchGameVersionTable(
     const VS_FIXEDFILEINFO* diablo_file_info,
@@ -159,13 +132,22 @@ enum GameVersion Diablo_FindGameVersion(
     const wchar_t* diablo_file_path,
     size_t diablo_file_path_len
 ) {
+  const wchar_t* kStormFileName = L"storm.dll";
+  const size_t kStormFileNameLen =
+      (sizeof(L"storm.dll") / sizeof(kStormFileName[0])) - 1;
+
   wchar_t* storm_file_path;
 
   VS_FIXEDFILEINFO diablo_file_info;
   VS_FIXEDFILEINFO storm_file_info;
 
   /* Diablo has to use Storm.dll and Diablo.exe to determine the version. */
-  storm_file_path = GetStormPath(diablo_file_path, diablo_file_path_len);
+  storm_file_path = GetAdjacentFilePath(
+      diablo_file_path,
+      diablo_file_path_len,
+      kStormFileName,
+      kStormFileNameLen
+  );
 
   ExtractFileInfo(&diablo_file_info, diablo_file_path);
   ExtractFileInfo(&storm_file_info, storm_file_path);
