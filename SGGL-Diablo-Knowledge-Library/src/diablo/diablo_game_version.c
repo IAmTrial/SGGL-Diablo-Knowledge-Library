@@ -51,7 +51,7 @@ kDiabloProductVersionsToGameVersion[] = {
     { { 1, 0, 9, 1 }, DIABLO_1_09 },
 
     /* 1, 0, 9, 2 */
-    { { 1, 0, 9, 1 }, DIABLO_1_09B },
+    { { 1, 0, 9, 2 }, DIABLO_1_09B },
 
     /* 96, 12, 26, 3 */
     { { 96, 12, 26, 3 }, DIABLO_1_00 },
