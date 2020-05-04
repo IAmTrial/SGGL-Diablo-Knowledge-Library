@@ -319,7 +319,7 @@ static enum GameVersion Determine1001GameVersionByData(
 
   const wchar_t* kStormFileName = L"storm.dll";
   const size_t kStormFileNameLen =
-      (sizeof(L"storm.dll") / sizeof(L""[0])) - 1;
+      (sizeof(L"storm.dll") / sizeof(kStormFileName[0])) - 1;
 
   struct GameVersionSignature search_key;
   const struct GameVersionSignature* search_result;
