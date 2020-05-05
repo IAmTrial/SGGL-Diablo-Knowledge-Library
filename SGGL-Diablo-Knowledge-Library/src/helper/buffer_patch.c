@@ -33,7 +33,7 @@
 
 #include "error_handling.h"
 
-struct BufferPatch* BufferPatch_Create(
+struct BufferPatch* BufferPatch_Init(
     struct BufferPatch* buffer_patch,
     void* position,
     size_t buffer_size,
@@ -81,7 +81,7 @@ struct BufferPatch* BufferPatch_Create(
   return buffer_patch;
 }
 
-void BufferPatch_Destroy(struct BufferPatch* buffer_patch) {
+void BufferPatch_Deinit(struct BufferPatch* buffer_patch) {
   BufferPatch_Remove(buffer_patch);
 
   buffer_patch->position = NULL;

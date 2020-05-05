@@ -42,7 +42,7 @@ struct BufferPatch {
   unsigned char* original_buffer;
 };
 
-struct BufferPatch* BufferPatch_Create(
+struct BufferPatch* BufferPatch_Init(
     struct BufferPatch* buffer_patch,
     void* position,
     size_t buffer_size,
@@ -50,7 +50,7 @@ struct BufferPatch* BufferPatch_Create(
     const PROCESS_INFORMATION* process_info
 );
 
-void BufferPatch_Destroy(struct BufferPatch* buffer_patch);
+void BufferPatch_Deinit(struct BufferPatch* buffer_patch);
 
 void BufferPatch_Apply(struct BufferPatch* buffer_patch);
 
