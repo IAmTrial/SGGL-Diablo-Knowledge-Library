@@ -31,12 +31,14 @@
 
 #include "game_version.h"
 #include "game_version_printer.h"
+#include "library_injector.h"
 
 void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
 ) {
   InitGameVersion(game_path, game_path_len);
+  InitLibraryInjector(game_path, game_path_len);
 }
 
 void Knowledge_Deinit(
@@ -44,6 +46,7 @@ void Knowledge_Deinit(
     size_t num_instances
 ) {
   DeinitGameVersion();
+  DeinitLibraryInjector();
 }
 
 void Knowledge_PrintGameInfo(void) {
@@ -56,5 +59,10 @@ int Knowledge_InjectLibrariesToProcesses(
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
 ) {
-  return 0;
+  return InjectLibraries(
+      libraries_to_inject,
+      num_libraries,
+      processes_infos,
+      num_instances
+  );
 }
