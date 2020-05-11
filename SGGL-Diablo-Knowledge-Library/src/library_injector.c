@@ -29,7 +29,7 @@
 
 #include "library_injector.h"
 
-#include "helper/pe_header.h"
+#include "patch_helper/pe_header.h"
 
 struct PeHeader pe_header;
 
