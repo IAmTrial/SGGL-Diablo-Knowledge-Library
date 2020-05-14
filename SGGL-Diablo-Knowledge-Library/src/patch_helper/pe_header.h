@@ -27,8 +27,8 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_HELPER_PE_HEADER_H_
-#define SGGLDKL_HELPER_PE_HEADER_H_
+#ifndef SGGLDKL_PATCH_HELPER_PE_HEADER_H_
+#define SGGLDKL_PATCH_HELPER_PE_HEADER_H_
 
 #include <stddef.h>
 #include <wchar.h>
@@ -53,4 +53,4 @@ struct PeHeader* PeHeader_Init(
 
 void PeHeader_Deinit(struct PeHeader* pe_header);
 
-#endif /* SGGLDKL_HELPER_PE_HEADER_H_ */
+#endif /* SGGLDKL_PATCH_HELPER_PE_HEADER_H_ */

@@ -27,8 +27,8 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_HELPER_BUFFER_PATCH_H_
-#define SGGLDKL_HELPER_BUFFER_PATCH_H_
+#ifndef SGGLDKL_PATCH_HELPER_BUFFER_PATCH_H_
+#define SGGLDKL_PATCH_HELPER_BUFFER_PATCH_H_
 
 #include <stddef.h>
 #include <windows.h>
@@ -56,4 +56,4 @@ void BufferPatch_Apply(struct BufferPatch* buffer_patch);
 
 void BufferPatch_Remove(struct BufferPatch* buffer_patch);
 
-#endif /* SGGLDKL_HELPER_BUFFER_PATCH_H_ */
+#endif /* SGGLDKL_PATCH_HELPER_BUFFER_PATCH_H_ */
