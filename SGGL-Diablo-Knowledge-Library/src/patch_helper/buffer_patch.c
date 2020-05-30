@@ -31,7 +31,7 @@
 
 #include <stdlib.h>
 
-#include "error_handling.h"
+#include "../helper/error_handling.h"
 
 struct BufferPatch* BufferPatch_Init(
     struct BufferPatch* buffer_patch,
