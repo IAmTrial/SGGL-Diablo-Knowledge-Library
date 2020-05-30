@@ -31,14 +31,23 @@
 #define SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_
 
 #include "buffer_patch.h"
+#include "pe_header.h"
 
 struct BufferPatch* EntryHijackPatch_Init(
     struct BufferPatch* buffer_patch,
     void* (*patch_address)(void),
-    void* (*reentry_address)(void),
-    const PROCESS_INFORMATION* process_info
+    const PROCESS_INFORMATION* process_info,
+    const struct PeHeader* pe_header
 );
 
 void EntryHijackPatch_Deinit(struct BufferPatch* buffer_patch);
+
+struct BufferPatch* PayloadPatch_Init(
+    struct BufferPatch* buffer_patch,
+    void* (*patch_address)(void),
+    const PROCESS_INFORMATION* process_info
+);
+
+void PayloadPatch_Deinit(struct BufferPatch* buffer_patch);
 
 #endif /* SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_ */
