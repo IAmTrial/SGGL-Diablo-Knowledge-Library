@@ -53,4 +53,12 @@ struct PeHeader* PeHeader_Init(
 
 void PeHeader_Deinit(struct PeHeader* pe_header);
 
+void* PeHeader_GetHardDataAddress(
+    const struct PeHeader* pe_header
+);
+
+void* PeHeader_GetHardEntryPointAddress(
+    const struct PeHeader* pe_header
+);
+
 #endif /* SGGLDKL_PATCH_HELPER_PE_HEADER_H_ */

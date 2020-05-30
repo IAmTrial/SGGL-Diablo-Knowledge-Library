@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stddef.h>
 
-#include "error_handling.h"
+#include "../helper/error_handling.h"
 
 enum Constant {
   PE_HEADER_PTR_OFFSET = 0x3C,
@@ -183,4 +183,18 @@ void PeHeader_Deinit(struct PeHeader* pe_header) {
   pe_header->image_base_address = NULL;
 
   free(pe_header->file_path);
+}
+
+void* PeHeader_GetHardDataAddress(
+    const struct PeHeader* pe_header
+) {
+  return (unsigned char*) pe_header->image_base_address
+      + (size_t) pe_header->data_base_address;
+}
+
+void* PeHeader_GetHardEntryPointAddress(
+    const struct PeHeader* pe_header
+) {
+  return (unsigned char*) pe_header->image_base_address
+      + (size_t) pe_header->entry_point_address;
 }
