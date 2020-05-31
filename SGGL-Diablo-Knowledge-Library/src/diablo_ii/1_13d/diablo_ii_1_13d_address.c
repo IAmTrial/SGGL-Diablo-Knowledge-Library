@@ -27,10 +27,22 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_
-#define SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_
+#include "diablo_ii_1_13d_address.h"
 
-#include "1_13c/diablo_ii_1_13c_address.h"
-#include "1_13d/diablo_ii_1_13d_address.h"
+#include <stddef.h>
 
-#endif /* SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_ */
+void* Diablo_II_1_13D_GetEntryHijackPatchAddress(
+    const struct PeHeader* pe_header
+) {
+  void* hard_entry_point_address;
+  size_t offset;
+
+  hard_entry_point_address = PeHeader_GetHardEntryPointAddress(
+      pe_header
+  );
+
+  offset = 0x1229 - 0x1227;
+
+  return (unsigned char*) hard_entry_point_address
+      + (size_t) (offset);
+}
