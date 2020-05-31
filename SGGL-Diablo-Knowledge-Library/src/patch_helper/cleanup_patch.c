@@ -27,7 +27,7 @@
  *  to convey the resulting work.
  */
 
-#include "entry_hijack_patch.h"
+#include "cleanup_patch.h"
 
 #include <string.h>
 
@@ -37,55 +37,51 @@ static const unsigned char kFuncEnd[] = {
   0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90
 };
 
-static const unsigned char kEntryHijackBytes[] = {
-  /* push 0 */
-  0x68, 0x00, 0x00, 0x00, 0x00,
+static size_t cleanup_func_size = 0;
 
-  /* call dummy_func */
-  0xE8, 0x00, 0x00, 0x00, 0x00
-};
+__declspec(naked) static void __stdcall CleanupFunc(void** top_of_stack) {
+  /* Hex for 8 0x90, which is used to detect the end of the function. */
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+}
 
-struct BufferPatch* EntryHijackPatch_Init(
+struct BufferPatch* CleanupPatch_Init(
     struct BufferPatch* buffer_patch,
     void* (*patch_address)(void),
-    const PROCESS_INFORMATION* process_info,
-    const struct PeHeader* pe_header
+    const PROCESS_INFORMATION* process_info
 ) {
-  unsigned char* data_address;
-  unsigned char* func_address;
-  unsigned char* func_address_offset;
+  int memcmp_result;
+  unsigned char* cleanup_func_bytes;
+
+  /* Determine the number of op bytes in the cleanup function. */
+  if (cleanup_func_size == 0) {
+    cleanup_func_bytes = (unsigned char*) &CleanupFunc;
+    do {
+      memcmp_result = memcmp(
+          &cleanup_func_bytes[cleanup_func_size],
+          kFuncEnd,
+          sizeof(kFuncEnd)
+      );
+    } while (memcmp_result != 0);
+  }
 
   BufferPatch_Init(
       buffer_patch,
       (void*) patch_address,
-      sizeof(kEntryHijackBytes),
-      kEntryHijackBytes,
+      cleanup_func_bytes,
+      (void*) &CleanupFunc,
       process_info
-  );
-
-  /*
-  * Rewrite the dummy values with the intended values. Replaces the
-  * push value with the data address and the call value with the
-  * function address offset.
-  */
-  data_address = PeHeader_GetHardDataAddress(pe_header);
-  func_address = data_address + sizeof(data_address);
-
-  func_address_offset = (unsigned char*) (data_address + 4)
-      - (size_t) patch_address
-      - 5
-      - 5;
-
-  memcpy(&buffer_patch->patch_buffer[1], &data_address, sizeof(data_address));
-  memcpy(
-      &buffer_patch->patch_buffer[6],
-      &func_address_offset,
-      sizeof(data_address)
   );
 
   return buffer_patch;
 }
 
-void EntryHijackPatch_Deinit(struct BufferPatch* buffer_patch) {
+void CleanupPatch_Deinit(struct BufferPatch* buffer_patch) {
   BufferPatch_Deinit(buffer_patch);
 }
