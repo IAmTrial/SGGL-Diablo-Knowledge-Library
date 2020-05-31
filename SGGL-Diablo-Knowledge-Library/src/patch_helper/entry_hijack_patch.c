@@ -33,16 +33,26 @@
 
 #include "../asm_x86_macro.h"
 
-static const unsigned char kFuncEnd[] = {
-  0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90
-};
-
 static const unsigned char kEntryHijackBytes[] = {
   /* push 0 */
   0x68, 0x00, 0x00, 0x00, 0x00,
 
   /* call dummy_func */
-  0xE8, 0x00, 0x00, 0x00, 0x00
+  0xE8, 0x00, 0x00, 0x00, 0x00,
+
+  /*
+  * Set the return to be the at the position of the push. Upon return,
+  * the code should be the original.
+  *
+  * sub dword ptr [esp], 10
+  */
+  0x83, 0x2C, 0x24, 0x0A,
+
+  /* jmp (beyond the free space) */
+  0xEB, 0x04,
+
+  /* Free space for one pointer. */
+  0x00, 0x00, 0x00, 0x00
 };
 
 struct BufferPatch* EntryHijackPatch_Init(
@@ -51,36 +61,24 @@ struct BufferPatch* EntryHijackPatch_Init(
     const PROCESS_INFORMATION* process_info,
     const struct PeHeader* pe_header
 ) {
-  unsigned char* data_address;
-  unsigned char* func_address;
-  unsigned char* func_address_offset;
+  unsigned char* free_space_address;
 
   BufferPatch_Init(
       buffer_patch,
       (void*) patch_address,
-      sizeof(kEntryHijackBytes),
+      EntryHijackPatch_GetSize(),
       kEntryHijackBytes,
       process_info
   );
 
-  /*
-  * Rewrite the dummy values with the intended values. Replaces the
-  * push value with the data address and the call value with the
-  * function address offset.
-  */
-  data_address = PeHeader_GetHardDataAddress(pe_header);
-  func_address = data_address + sizeof(data_address);
+  free_space_address = (unsigned char*) patch_address
+      + EntryHijackPatch_GetSize()
+      - sizeof(void*);
 
-  func_address_offset = (unsigned char*) (data_address + 4)
-      - (size_t) patch_address
-      - 5
-      - 5;
-
-  memcpy(&buffer_patch->patch_buffer[1], &data_address, sizeof(data_address));
   memcpy(
-      &buffer_patch->patch_buffer[6],
-      &func_address_offset,
-      sizeof(data_address)
+      &buffer_patch->patch_buffer[1],
+      &free_space_address,
+      sizeof(free_space_address)
   );
 
   return buffer_patch;
@@ -88,4 +86,8 @@ struct BufferPatch* EntryHijackPatch_Init(
 
 void EntryHijackPatch_Deinit(struct BufferPatch* buffer_patch) {
   BufferPatch_Deinit(buffer_patch);
+}
+
+size_t EntryHijackPatch_GetSize(void) {
+  return sizeof(kEntryHijackBytes);
 }

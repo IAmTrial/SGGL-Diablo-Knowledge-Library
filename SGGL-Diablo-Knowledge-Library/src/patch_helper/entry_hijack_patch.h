@@ -30,6 +30,9 @@
 #ifndef SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_
 #define SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_
 
+#include <stddef.h>
+#include <windows.h>
+
 #include "buffer_patch.h"
 #include "pe_header.h"
 
@@ -41,5 +44,7 @@ struct BufferPatch* EntryHijackPatch_Init(
 );
 
 void EntryHijackPatch_Deinit(struct BufferPatch* buffer_patch);
+
+size_t EntryHijackPatch_GetSize(void);
 
 #endif /* SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_ */
