@@ -40,21 +40,43 @@
 
 /*
 * This struct must be completely synced with the stack data in
-* entry_hijack_patch->PayloadFunc.
+* entry_hijack_patch->PayloadFunc. Note these values should be
+* offset +4 from the description.
 *
 * -4: num_libs, needs to be inited by SGGL
 * -8: current_thread_handle
 * -12: is_lib_resize_needed, can be modified by SGGL
 * -16: lib_path_size, can be read by SGGL
 * -20: lib_path_ptr, data inside can be modified by SGGL
+* -24: is_ready_to_execute, can be modified by SGGL
+* -28 to -64: reserved, for variables
+* -68: VirtualFree
+* -72: VirtualAlloc
+* -76: SuspendThread
+* -80: GetCurrentThread
+* -84: LoadLibraryA
+* -88 to -128: reserved, for kernel functions
 */
+#pragma pack(push, 1)
 struct StackData {
+  unsigned int reserved_kernel_func_ptr[(132 - 88) / 4];
+
+  HMODULE (WINAPI *LoadLibraryA_ptr)(LPCSTR);
+  HANDLE (WINAPI *GetCurrentThread_ptr)(void);
+  DWORD (WINAPI *SuspendThread_ptr)(HANDLE);
+  void* (WINAPI *VirtualAlloc_ptr)(void*, DWORD, DWORD, DWORD);
+  BOOL (WINAPI *VirtualFree_ptr)(void*, DWORD, DWORD);
+
+  unsigned int reserved_variable_ptr[(64 - 24) / 4];
+
+  int is_ready_to_execute;
   unsigned char* lib_path_ptr;
   size_t lib_path_size;
   int is_lib_resize_needed;
   DWORD current_thread_handle;
   size_t num_libs;
 };
+#pragma pack(pop)
 
 static struct PeHeader pe_header;
 
@@ -74,6 +96,10 @@ static void* GetEntryHijackPatchAddress(
   switch (running_game_version) {
     case DIABLO_II_1_13C: {
       return Diablo_II_1_13C_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_13D: {
+      return Diablo_II_1_13D_GetEntryHijackPatchAddress(pe_header);
     }
   }
 }
@@ -108,6 +134,14 @@ static void WaitForProcessSuspend(const PROCESS_INFORMATION* process_info) {
   } while (resume_thread_result == 0);
 }
 
+static void StackData_InitFuncs(struct StackData* stack_data) {
+  stack_data->LoadLibraryA_ptr = &LoadLibraryA;
+  stack_data->GetCurrentThread_ptr = &GetCurrentThread;
+  stack_data->SuspendThread_ptr = &SuspendThread;
+  stack_data->VirtualAlloc_ptr = &VirtualAlloc;
+  stack_data->VirtualFree_ptr = &VirtualFree;
+}
+
 static int InjectLibrariesToProcess(
     const PROCESS_INFORMATION* process_info,
     size_t num_libraries,
@@ -121,30 +155,45 @@ static int InjectLibrariesToProcess(
   void* data_address;
   void* entry_hijack_patch_address;
   void* stack_data_address;
+  DWORD old_data_address_protect;
+  DWORD old_stack_data_protect;
   struct StackData stack_data_copy;
   char* library_to_inject_mb;
   size_t library_to_inject_mb_size;
+  size_t num_bytes_read_write_process_memory;
 
   struct BufferPatch entry_hijack_patch;
   struct BufferPatch payload_patch;
-  struct BufferPatch null_data_patch;
+  struct BufferPatch space_data_patch;
 
   DWORD resume_thread_result;
   BOOL is_read_process_memory_success;
   BOOL is_write_process_memory_success;
+  BOOL is_virtual_protect_ex_success;
+
+  printf("%u \n", sizeof(stack_data_copy));
 
   /* Get the address of the data and the address of the patch location. */
   data_address = PeHeader_GetHardDataAddress(&pe_header);
   entry_hijack_patch_address = GetEntryHijackPatchAddress(&pe_header);
 
-  /* Initialize the patches. */
-  EntryHijackPatch_Init(
-      &entry_hijack_patch,
-      (void* (*)(void)) entry_hijack_patch_address,
-      process_info,
-      &pe_header
+  /* Change the access protection of the data to enable write and execute. */
+  is_virtual_protect_ex_success = VirtualProtectEx(
+      process_info->hProcess,
+      data_address,
+      1024,
+      PAGE_EXECUTE_READWRITE,
+      &old_data_address_protect
   );
 
+  if (!is_virtual_protect_ex_success) {
+    ExitOnWindowsFunctionFailureWithLastError(
+        L"VirtualProtectEx",
+        GetLastError()
+    );
+  }
+
+  /* Initialize the patches. */
   PayloadPatch_Init(
       &payload_patch,
       (void* (*)(void)) ((unsigned char*) data_address + sizeof(void*)),
@@ -153,21 +202,28 @@ static int InjectLibrariesToProcess(
 
   BufferPatch_Init(
       &null_data_patch,
-      (void*) data_address,
+      (void*) entry_hijack_patch_address,
       sizeof(data_address),
       kNullBuffer,
       process_info
   );
 
-  /* Patch the entry function and add the payload to the game. */
-  BufferPatch_Apply(&payload_patch);
-  BufferPatch_Apply(&null_data_patch);
- 
   /*
   * Entry hijack comes last, because we want to deinit it first so the
   * original game code execution can be resumed.
   */
+  EntryHijackPatch_Init(
+      &entry_hijack_patch,
+      (void* (*)(void)) entry_hijack_patch_address,
+      process_info,
+      &pe_header
+  );
+
+  /* Patch the entry function and add the payload to the game. */
   BufferPatch_Apply(&entry_hijack_patch);
+  BufferPatch_Apply(&payload_patch);
+  BufferPatch_Apply(&null_data_patch);
+
 
   /* Resume game thread. */
   resume_thread_result = ResumeThread(process_info->hThread);
@@ -179,27 +235,42 @@ static int InjectLibrariesToProcess(
     );
   }
 
-  /* Infinitely loop until the stack data pointer has been set. */
+
+  /* Get the stack address. */
   stack_data_address = NULL;
-  while (stack_data_address == NULL) {
+  do {
     is_read_process_memory_success = ReadProcessMemory(
         process_info->hProcess,
         data_address,
-        stack_data_address,
+        &stack_data_address,
         sizeof(stack_data_address),
-        NULL
+        &num_bytes_read_write_process_memory
     );
 
-    if (is_read_process_memory_success) {
+    if (!is_read_process_memory_success) {
+      printf("Read: %u \n", num_bytes_read_write_process_memory);
+
       ExitOnWindowsFunctionFailureWithLastError(
           L"ReadProcessMemory",
           GetLastError()
       );
     }
-  }
+  } while (stack_data_address == NULL);
 
-  /* Wait until the game thread has suspended itself. */
-  WaitForProcessSuspend(process_info);
+  MessageBoxA(0, "mnbnmnb", "", MB_OK);
+
+  /*
+  * Change the access protection of the stack data to enable write and
+  * execute.
+  */
+  is_virtual_protect_ex_success = VirtualProtectEx(
+      process_info->hProcess,
+      stack_data_address,
+      1024,
+      PAGE_READWRITE,
+      &old_stack_data_protect
+  );
+
 
   /* Read the initial stack data. */
   is_read_process_memory_success = ReadProcessMemory(
@@ -207,28 +278,34 @@ static int InjectLibrariesToProcess(
       stack_data_address,
       &stack_data_copy,
       sizeof(stack_data_copy),
-      NULL
+      &num_bytes_read_write_process_memory
   );
 
   if (!is_read_process_memory_success) {
+    printf("Read: %u \n", num_bytes_read_write_process_memory);
+
     ExitOnWindowsFunctionFailureWithLastError(
         L"ReadProcessMemory",
         GetLastError()
     );
   }
 
-  /* Init the number of libs. */
+  /* Init the stack data. */
   stack_data_copy.num_libs = num_libraries;
+  stack_data_copy.is_ready_to_execute = 1;
+  StackData_InitFuncs(&stack_data_copy);
 
   is_write_process_memory_success = WriteProcessMemory(
       process_info->hProcess,
       stack_data_address,
       &stack_data_copy,
       sizeof(stack_data_copy),
-      NULL
+      &num_bytes_read_write_process_memory
   );
 
   if (!is_write_process_memory_success) {
+    printf("Written: %u \n", num_bytes_read_write_process_memory);
+
     ExitOnWindowsFunctionFailureWithLastError(
         L"WriteProcessMemory",
         GetLastError()
@@ -314,6 +391,22 @@ free_library_to_inject_mb:
     }
   }
 
+  /* Restore the access protection of the stack data. */
+  is_virtual_protect_ex_success = VirtualProtectEx(
+      process_info->hProcess,
+      data_address,
+      1024,
+      old_stack_data_protect,
+      &old_stack_data_protect
+  );
+
+  if (!is_virtual_protect_ex_success) {
+    ExitOnWindowsFunctionFailureWithLastError(
+        L"VirtualProtectEx",
+        GetLastError()
+    );
+  }
+
   /* Restore the entry code to the original. */
 deinit_entry_hijack_patch:
   EntryHijackPatch_Deinit(&entry_hijack_patch);
@@ -326,6 +419,22 @@ deinit_null_data_patch:
 
 deinit_payload_patch:
   PayloadPatch_Deinit(&payload_patch);
+
+  /* Restore the access protection of the data address. */
+  is_virtual_protect_ex_success = VirtualProtectEx(
+      process_info->hProcess,
+      data_address,
+      1024,
+      old_data_address_protect,
+      &old_data_address_protect
+  );
+
+  if (!is_virtual_protect_ex_success) {
+    ExitOnWindowsFunctionFailureWithLastError(
+        L"VirtualProtectEx",
+        GetLastError()
+    );
+  }
 
   return 1;
 }

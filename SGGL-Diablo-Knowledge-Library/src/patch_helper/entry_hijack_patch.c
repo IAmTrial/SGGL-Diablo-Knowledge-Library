@@ -65,18 +65,36 @@ __declspec(naked) static void __stdcall PayloadFunc(void** top_of_stack) {
   * -12: is_lib_resize_needed, can be modified by SGGL
   * -16: lib_path_size, can be read by SGGL
   * -20: lib_path_ptr, data inside can be modified by SGGL
+  * -24: is_ready_to_execute, can be modified by SGGL
+  * -28 to -64: reserved, for variables
+  * -68: VirtualFree
+  * -72: VirtualAlloc
+  * -76: SuspendThread
+  * -80: GetCurrentThread
+  * -84: LoadLibraryA
+  * -88 to -128: reserved, for kernel functions
   */
-  ASM_X86(sub esp, 20);
+  ASM_X86(sub esp, 128);
+
+  /*
+  * This must occur before the *top_of_stack is init to prevent
+  * infinite loop race condition!
+  */
+  ASM_X86(mov dword ptr [ebp - 24], 0);
 
   /* *top_of_stack = esp; */
   ASM_X86(mov esi, dword ptr [ebp + 36]);
   ASM_X86(mov dword ptr [esi], esp);
 
+ASM_X86_LABEL(SpinlockWaitForInitReady)
+  ASM_X86(cmp dword ptr [ebp - 24], 0);
+  ASM_X86(je SpinlockWaitForInitReady);
+
   /* is_lib_resize_needed = 1; */
   ASM_X86(mov dword ptr [ebp - 12], 1);
 
   /* current_thread_handle = GetCurrentThread(); */
-  ASM_X86(call ASM_X86_FUNC(GetCurrentThread));
+  ASM_X86(call dword ptr [ebp - 80]);
   ASM_X86(mov dword ptr [ebp - 8], eax);
 
   /* lib_path_size = 32; */
@@ -89,7 +107,7 @@ ASM_X86_LABEL(PayloadFunc_ReallocPath)
   ASM_X86(push 0x800);                  /* MEM_RELEASE */
   ASM_X86(push 0);
   ASM_X86(push dword ptr [ebp - 20]);   /* lib_path_ptr */
-  ASM_X86(call ASM_X86_FUNC(VirtualFree));
+  ASM_X86(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
 
   /* lib_path_size *= 2; */
   ASM_X86(shl dword ptr [ebp - 16], 1);
@@ -97,10 +115,10 @@ ASM_X86_LABEL(PayloadFunc_ReallocPath)
   /* Allocate space for the path. */
 ASM_X86_LABEL(PayloadFunc_AllocPath)
   ASM_X86(push 0x4);                    /* PAGE_READWRITE */
-  ASM_X86(push 0x3000);                 /* MEM_COMMIT | MEM_RESERVE */
+  ASM_X86(push 0x00003000);             /* MEM_COMMIT | MEM_RESERVE */
   ASM_X86(push dword ptr [ebp - 16]);   /* lib_path_size */
   ASM_X86(push 0);                      /* NULL */
-  ASM_X86(call ASM_X86_FUNC(VirtualAlloc));
+  ASM_X86(call dword ptr [ebp - 72]);   /* VirtualAlloc(...); */
 
   /* lib_path_ptr = VirtualAlloc(...); */
   ASM_X86(mov dword ptr [ebp - 20], eax);
@@ -111,7 +129,7 @@ ASM_X86_LABEL(PayloadFunc_AllocPath)
   /* Suspend current thread until SGGL wakes it up. */
 ASM_X86_LABEL(PayloadFunc_WaitForNextIteration)
   ASM_X86(push dword ptr [ebp - 8]);
-  ASM_X86(call ASM_X86_FUNC(SuspendThread));
+  ASM_X86(call dword ptr [ebp - 76]);   /* SuspendThread(...); */
 
   /* Check if reallocation is needed. */
   ASM_X86(cmp dword ptr [ebp - 12], 0);
@@ -123,23 +141,38 @@ ASM_X86_LABEL(PayloadFunc_WaitForNextIteration)
 
   /* Load library. */
   ASM_X86(push dword ptr [ebp - 20]);
-  ASM_X86(call ASM_X86_FUNC(LoadLibraryA));
+  ASM_X86(call dword ptr [ebp - 84]);   /* LoadLibraryA(...); */
 
   ASM_X86(dec dword ptr [ebp - 4]);
   ASM_X86(jmp PayloadFunc_WaitForNextIteration);
 
 ASM_X86_LABEL(PayloadFunc_End)
   /* Free lib_path_ptr. */
-  ASM_X86(push 0x800);                  /* MEM_RELEASE */
+  ASM_X86(push 0x00000800);             /* MEM_RELEASE */
   ASM_X86(push 0);
   ASM_X86(push dword ptr [ebp - 20]);   /* lib_path_ptr */
-  ASM_X86(call ASM_X86_FUNC(VirtualFree));
+  ASM_X86(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
 
   /* Function epilogue */
-  ASM_X86(add esp, 20);
+  ASM_X86(add esp, 128);
   ASM_X86(popad);
 
   ASM_X86(ret 4);
+
+  /* Hex for 8 0x90, which is used to detect the end of the function. */
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+  ASM_X86(nop);
+}
+
+__declspec(naked) static void __stdcall CleanupFunc(void** top_of_stack) {
+  /* Allow the return address to go back to the original code. */
+  ASM_X86(sub dword ptr [esp], 5);
 
   /* Hex for 8 0x90, which is used to detect the end of the function. */
   ASM_X86(nop);
@@ -159,6 +192,7 @@ struct BufferPatch* EntryHijackPatch_Init(
     const struct PeHeader* pe_header
 ) {
   unsigned char* data_address;
+  unsigned char* func_address;
   unsigned char* func_address_offset;
 
   BufferPatch_Init(
@@ -175,15 +209,17 @@ struct BufferPatch* EntryHijackPatch_Init(
   * function address offset.
   */
   data_address = PeHeader_GetHardDataAddress(pe_header);
+  func_address = data_address + sizeof(data_address);
 
   func_address_offset = (unsigned char*) (data_address + 4)
       - (size_t) patch_address
+      - 5
       - 5;
 
-  memcpy(&buffer_patch->patch_buffer[1], data_address, sizeof(data_address));
+  memcpy(&buffer_patch->patch_buffer[1], &data_address, sizeof(data_address));
   memcpy(
       &buffer_patch->patch_buffer[6],
-      data_address + 4,
+      &func_address_offset,
       sizeof(data_address)
   );
 
@@ -199,10 +235,20 @@ struct BufferPatch* PayloadPatch_Init(
     void* (*patch_address)(void),
     const PROCESS_INFORMATION* process_info
 ) {
+  unsigned char* payload_func_bytes = &PayloadFunc;
+
+  int memcpy_result;
+
   /* Determine the number of op bytes in the entry hijack function. */
   if (payload_func_size == 0) {
     for (payload_func_size = 0; ; payload_func_size += 1) {
-      if (memcmp(&PayloadFunc, kFuncEnd, sizeof(kFuncEnd)) == 0) {
+      memcpy_result = memcmp(
+          &payload_func_bytes[payload_func_size],
+          kFuncEnd,
+          sizeof(kFuncEnd)
+      );
+
+      if (memcpy_result == 0) {
         break;
       }
     }
