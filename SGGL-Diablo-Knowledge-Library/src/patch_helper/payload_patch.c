@@ -37,8 +37,6 @@ static const unsigned char kFuncEnd[] = {
   0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90
 };
 
-static size_t payload_func_size = 0;
-
 __declspec(naked) static void __stdcall PayloadFunc(void** top_of_stack) {
   /* Allow the return address to go back to the original code. */
   ASM_X86(sub dword ptr [esp], 5);
@@ -162,34 +160,35 @@ ASM_X86_LABEL(PayloadFunc_End)
   ASM_X86(nop);
 }
 
+static void InitFuncSize(size_t* func_size) {
+  const unsigned char* payload_func_bytes;
+  int memcmp_result;
+
+  payload_func_bytes = (const unsigned char*) &PayloadFunc;
+
+  do {
+    memcmp_result = memcmp(
+        &payload_func_bytes[*func_size],
+        kFuncEnd,
+        sizeof(kFuncEnd)
+    );
+
+    *func_size += 1;
+  } while (memcmp_result != 0);
+
+  *func_size -= 1;
+}
+
 struct BufferPatch* PayloadPatch_Init(
     struct BufferPatch* buffer_patch,
     void* (*patch_address)(void),
     const PROCESS_INFORMATION* process_info
 ) {
-  unsigned char* payload_func_bytes = &PayloadFunc;
-
-  int memcpy_result;
-
-  /* Determine the number of op bytes in the entry hijack function. */
-  if (payload_func_size == 0) {
-    for (payload_func_size = 0; ; payload_func_size += 1) {
-      memcpy_result = memcmp(
-          &payload_func_bytes[payload_func_size],
-          kFuncEnd,
-          sizeof(kFuncEnd)
-      );
-
-      if (memcpy_result == 0) {
-        break;
-      }
-    }
-  }
 
   BufferPatch_Init(
       buffer_patch,
       (void*) patch_address,
-      payload_func_size,
+      PayloadPatch_GetSize(),
       (void*) &PayloadFunc,
       process_info
   );
@@ -199,4 +198,14 @@ struct BufferPatch* PayloadPatch_Init(
 
 void PayloadPatch_Deinit(struct BufferPatch* buffer_patch) {
   BufferPatch_Deinit(buffer_patch);
+}
+
+size_t PayloadPatch_GetSize(void) {
+  static size_t payload_func_size = 0;
+
+  if (payload_func_size == 0) {
+    InitFuncSize(&payload_func_size);
+  }
+
+  return payload_func_size;
 }

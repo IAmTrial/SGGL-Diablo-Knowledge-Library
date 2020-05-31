@@ -30,6 +30,7 @@
 #ifndef SGGLDKL_PATCH_HELPER_PAYLOAD_PATCH_H_
 #define SGGLDKL_PATCH_HELPER_PAYLOAD_PATCH_H_
 
+#include <stddef.h>
 #include <windows.h>
 
 #include "buffer_patch.h"
@@ -41,5 +42,7 @@ struct BufferPatch* PayloadPatch_Init(
 );
 
 void PayloadPatch_Deinit(struct BufferPatch* buffer_patch);
+
+size_t PayloadPatch_GetSize(void);
 
 #endif /* SGGLDKL_PATCH_HELPER_PAYLOAD_PATCH_H_ */

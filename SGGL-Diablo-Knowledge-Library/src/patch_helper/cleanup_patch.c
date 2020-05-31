@@ -37,8 +37,6 @@ static const unsigned char kFuncEnd[] = {
   0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90
 };
 
-static size_t cleanup_func_size = 0;
-
 __declspec(naked) static void __stdcall CleanupFunc(void** top_of_stack) {
   /* Hex for 8 0x90, which is used to detect the end of the function. */
   ASM_X86(nop);
@@ -51,30 +49,34 @@ __declspec(naked) static void __stdcall CleanupFunc(void** top_of_stack) {
   ASM_X86(nop);
 }
 
+static void InitFuncSize(size_t* func_size) {
+  const unsigned char* cleanup_func_bytes;
+  int memcmp_result;
+
+  cleanup_func_bytes = (const unsigned char*) &CleanupFunc;
+
+  do {
+    memcmp_result = memcmp(
+        &cleanup_func_bytes[*func_size],
+        kFuncEnd,
+        sizeof(kFuncEnd)
+    );
+
+    *func_size += 1;
+  } while (memcmp_result != 0);
+
+  *func_size -= 1;
+}
+
 struct BufferPatch* CleanupPatch_Init(
     struct BufferPatch* buffer_patch,
     void* (*patch_address)(void),
     const PROCESS_INFORMATION* process_info
 ) {
-  int memcmp_result;
-  unsigned char* cleanup_func_bytes;
-
-  /* Determine the number of op bytes in the cleanup function. */
-  if (cleanup_func_size == 0) {
-    cleanup_func_bytes = (unsigned char*) &CleanupFunc;
-    do {
-      memcmp_result = memcmp(
-          &cleanup_func_bytes[cleanup_func_size],
-          kFuncEnd,
-          sizeof(kFuncEnd)
-      );
-    } while (memcmp_result != 0);
-  }
-
   BufferPatch_Init(
       buffer_patch,
       (void*) patch_address,
-      cleanup_func_bytes,
+      CleanupPatch_GetSize(),
       (void*) &CleanupFunc,
       process_info
   );
@@ -84,4 +86,14 @@ struct BufferPatch* CleanupPatch_Init(
 
 void CleanupPatch_Deinit(struct BufferPatch* buffer_patch) {
   BufferPatch_Deinit(buffer_patch);
+}
+
+size_t CleanupPatch_GetSize(void) {
+  static size_t cleanup_func_size;
+
+  if (cleanup_func_size == 0) {
+    InitFuncSize(&cleanup_func_size);
+  }
+
+  return cleanup_func_size;
 }
