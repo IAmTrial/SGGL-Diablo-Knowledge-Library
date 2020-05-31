@@ -27,19 +27,19 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_
-#define SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_
+#ifndef SGGLDKL_PATCH_HELPER_PAYLOAD_PATCH_H_
+#define SGGLDKL_PATCH_HELPER_PAYLOAD_PATCH_H_
+
+#include <windows.h>
 
 #include "buffer_patch.h"
-#include "pe_header.h"
 
-struct BufferPatch* EntryHijackPatch_Init(
+struct BufferPatch* PayloadPatch_Init(
     struct BufferPatch* buffer_patch,
     void* (*patch_address)(void),
-    const PROCESS_INFORMATION* process_info,
-    const struct PeHeader* pe_header
+    const PROCESS_INFORMATION* process_info
 );
 
-void EntryHijackPatch_Deinit(struct BufferPatch* buffer_patch);
+void PayloadPatch_Deinit(struct BufferPatch* buffer_patch);
 
-#endif /* SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_ */
+#endif /* SGGLDKL_PATCH_HELPER_PAYLOAD_PATCH_H_ */
