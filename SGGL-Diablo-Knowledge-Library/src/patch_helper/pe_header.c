@@ -183,6 +183,8 @@ void PeHeader_Deinit(struct PeHeader* pe_header) {
   pe_header->image_base_address = NULL;
 
   free(pe_header->file_path);
+
+  pe_header->file_path = NULL;
 }
 
 void* PeHeader_GetHardDataAddress(
