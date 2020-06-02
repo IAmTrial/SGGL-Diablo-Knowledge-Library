@@ -41,7 +41,7 @@ void* Diablo_II_1_13C_GetEntryHijackPatchAddress(
       pe_header
   );
 
-  offset = 0x1230 - 0x122E;
+  offset = 0x124E - 0x122E;
 
   return (unsigned char*) hard_entry_point_address
       + (size_t) (offset);
