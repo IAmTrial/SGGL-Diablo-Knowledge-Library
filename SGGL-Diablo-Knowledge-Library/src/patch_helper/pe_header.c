@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stddef.h>
 
+#include "../helper/encoding.h"
 #include "../helper/error_handling.h"
 
 enum Constant {
@@ -49,6 +50,8 @@ struct PeHeader* PeHeader_Init(
   int is_fseek_fail;
   size_t num_fread_objects;
 
+  char* file_path_mb;
+
   /* Store a copy of the file path in the PE header. */
   pe_header->file_path = malloc(
       (file_path_len + 1) * sizeof(pe_header->file_path[0])
@@ -62,8 +65,11 @@ struct PeHeader* PeHeader_Init(
 
   pe_header->file_path_len = file_path_len;
 
+  /* Convert the path to multibyte characters. */
+  file_path_mb = ConvertWideToMultibyte(NULL, pe_header->file_path);
+
   /* Open the file for reading, in byte mode. */
-  file_stream = _wfopen(file_path, L"rb");
+  file_stream = fopen(file_path_mb, "rb");
 
   if (file_stream == NULL) {
     ExitOnGeneralFailure(
@@ -170,6 +176,9 @@ struct PeHeader* PeHeader_Init(
         L"Error"
     );
   }
+
+free_file_path_mb:
+  free(file_path_mb);
 
   return pe_header;
 }

@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../helper/encoding.h"
 #include "../helper/error_handling.h"
 #include "../helper/file_info.h"
 #include "../helper/file_path.h"
@@ -328,6 +329,7 @@ static enum GameVersion Determine1001GameVersionByData(
       / sizeof(search_key.file_signature.signature[0]);
 
   wchar_t* storm_file_path;
+  char* storm_file_path_mb;
   FILE* game_file_stream;
 
   int is_fseek_fail;
@@ -335,7 +337,7 @@ static enum GameVersion Determine1001GameVersionByData(
 
   size_t actual_num_check_bytes;
 
-  /* Open the file for reading. */
+  /* Determine the file for reading. */
   storm_file_path = GetAdjacentFilePath(
       game_file_path,
       game_file_path_len,
@@ -343,7 +345,10 @@ static enum GameVersion Determine1001GameVersionByData(
       kStormFileNameLen
   );
 
-  game_file_stream = _wfopen(storm_file_path, L"rb");
+  /* Convert the path to multibyte characters. */
+  storm_file_path_mb = ConvertWideToMultibyte(NULL, storm_file_path);
+
+  game_file_stream = fopen(storm_file_path_mb, "rb");
 
   if (game_file_stream == NULL) {
     ExitOnGeneralFailure(
@@ -407,6 +412,9 @@ static enum GameVersion Determine1001GameVersionByData(
   if (search_result == NULL) {
     return VERSION_UNKNOWN;
   }
+
+free_storm_file_path_mb:
+  free(storm_file_path_mb);
 
 free_storm_file_path:
   free(storm_file_path);
