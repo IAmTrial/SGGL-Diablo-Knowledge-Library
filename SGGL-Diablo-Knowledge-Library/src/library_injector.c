@@ -29,56 +29,24 @@
 
 #include "library_injector.h"
 
+#include <stdio.h>
+
 #include "diablo_ii/diablo_ii_address.h"
 #include "game_version.h"
 #include "game_version_enum.h"
 #include "helper/encoding.h"
 #include "helper/error_handling.h"
 #include "patch_helper/buffer_patch.h"
+#include "patch_helper/cleanup_patch.h"
 #include "patch_helper/entry_hijack_patch.h"
+#include "patch_helper/payload_patch.h"
 #include "patch_helper/pe_header.h"
 
-/*
-* This struct must be completely synced with the stack data in
-* entry_hijack_patch->PayloadFunc. Note these values should be
-* offset +4 from the description.
-*
-* -4: num_libs, needs to be inited by SGGL
-* -8: current_thread_handle
-* -12: is_lib_resize_needed, can be modified by SGGL
-* -16: lib_path_size, can be read by SGGL
-* -20: lib_path_ptr, data inside can be modified by SGGL
-* -24: is_ready_to_execute, can be modified by SGGL
-* -28 to -64: reserved, for variables
-* -68: VirtualFree
-* -72: VirtualAlloc
-* -76: SuspendThread
-* -80: GetCurrentThread
-* -84: LoadLibraryA
-* -88 to -128: reserved, for kernel functions
-*/
-#pragma pack(push, 1)
-struct StackData {
-  unsigned int reserved_kernel_func_ptr[(132 - 88) / 4];
-
-  HMODULE (WINAPI *LoadLibraryA_ptr)(LPCSTR);
-  HANDLE (WINAPI *GetCurrentThread_ptr)(void);
-  DWORD (WINAPI *SuspendThread_ptr)(HANDLE);
-  void* (WINAPI *VirtualAlloc_ptr)(void*, DWORD, DWORD, DWORD);
-  BOOL (WINAPI *VirtualFree_ptr)(void*, DWORD, DWORD);
-
-  unsigned int reserved_variable_ptr[(64 - 24) / 4];
-
-  int is_ready_to_execute;
-  unsigned char* lib_path_ptr;
-  size_t lib_path_size;
-  int is_lib_resize_needed;
-  DWORD current_thread_handle;
-  size_t num_libs;
+static struct InjectorPatches {
+  struct BufferPatch entry_hijack_patch;
+  struct BufferPatch payload_patch;
+  struct BufferPatch cleanup_patch;
 };
-#pragma pack(pop)
-
-static struct PeHeader pe_header;
 
 static void* GetEntryHijackPatchAddress(
     const struct PeHeader* pe_header
@@ -104,9 +72,114 @@ static void* GetEntryHijackPatchAddress(
   }
 }
 
+struct InjectorPatches* InjectorPatches_Init(
+    struct InjectorPatches* injector_patches,
+    const struct PeHeader* pe_header,
+    const PROCESS_INFORMATION* process_info
+) {
+  void* (*cleanup_patch_address)(void);
+
+  unsigned char* entry_hijack_patch_address;
+  unsigned char* payload_patch_address;
+
+  cleanup_patch_address = PeHeader_GetHardEntryPointAddress(pe_header);
+
+  CleanupPatch_Init(
+      &injector_patches->cleanup_patch,
+      cleanup_patch_address,
+      process_info
+  );
+
+  entry_hijack_patch_address = GetEntryHijackPatchAddress(pe_header);
+
+#if !NDEBUG
+  printf("Entry hijack patch address: %p \n", entry_hijack_patch_address);
+#endif /* !NDEBUG */
+
+  EntryHijackPatch_Init(
+      &injector_patches->entry_hijack_patch,
+      (void* (*)(void)) entry_hijack_patch_address,
+      process_info,
+      pe_header
+  );
+
+  payload_patch_address =
+      (unsigned char*) injector_patches->entry_hijack_patch.position
+          + EntryHijackPatch_GetSize();
+
+  PayloadPatch_Init(
+      &injector_patches->payload_patch,
+      (void* (*)(void)) payload_patch_address,
+      cleanup_patch_address,
+      process_info
+  );
+
+  return injector_patches;
+}
+
+void InjectorPatches_Deinit(struct InjectorPatches* injector_patches) {
+  PayloadPatch_Deinit(&injector_patches->payload_patch);
+  EntryHijackPatch_Deinit(&injector_patches->entry_hijack_patch);
+  CleanupPatch_Deinit(&injector_patches->cleanup_patch);
+}
+
+/*
+* This struct must be completely synced with the stack data in
+* entry_hijack_patch->PayloadFunc. Note these values should be
+* offset +4 from the description.
+*
+* -4: num_libs, needs to be inited by SGGL
+* -8: current_thread_handle
+* -12: is_lib_resize_needed, can be modified by SGGL
+* -16: lib_path_size, can be read by SGGL
+* -20: lib_path_ptr, data inside can be modified by SGGL
+* -24: is_ready_to_execute, can be modified by SGGL
+* -28: is_ready_to_exit, can be modified by SGGL
+* -32 to -64: reserved, for variables
+* -68: VirtualFree
+* -72: VirtualAlloc
+* -76: SuspendThread
+* -80: GetCurrentThread
+* -84: LoadLibraryA
+* -88 to -128: reserved, for kernel functions
+* -132 to -192: reserved, for local jump offsets
+*/
+#pragma pack(push, 1)
+struct StackData {
+  unsigned int reserved_local_jump_offsets[(192 - 128) / 4];
+  unsigned int reserved_kernel_func_ptr[(128 - 84) / 4];
+
+  HMODULE (WINAPI *LoadLibraryA_ptr)(LPCSTR);
+  HANDLE (WINAPI *GetCurrentThread_ptr)(void);
+  DWORD (WINAPI *SuspendThread_ptr)(HANDLE);
+  void* (WINAPI *VirtualAlloc_ptr)(void*, DWORD, DWORD, DWORD);
+  BOOL (WINAPI *VirtualFree_ptr)(void*, DWORD, DWORD);
+
+  unsigned int reserved_variable_ptr[(64 - 28) / 4];
+
+  int is_ready_to_exit;
+  int is_ready_to_execute;
+  char* lib_path;
+  size_t lib_path_size;
+  int is_lib_resize_needed;
+  DWORD current_thread_handle;
+  size_t num_libs;
+};
+#pragma pack(pop)
+
+static struct PeHeader pe_header;
+
 static void WaitForProcessSuspend(const PROCESS_INFORMATION* process_info) {
   DWORD suspend_thread_result;
   DWORD resume_thread_result;
+
+#if !NDEBUG
+  printf(
+      "Waiting for the process %u, thread %u to suspend. \n",
+      process_info->dwProcessId,
+      process_info->dwThreadId
+  );
+#endif /* !NDEBUG */
 
   do {
     /*
@@ -131,7 +204,15 @@ static void WaitForProcessSuspend(const PROCESS_INFORMATION* process_info) {
           GetLastError()
       );
     }
-  } while (resume_thread_result == 0);
+  } while (resume_thread_result == 1);
+
+#if !NDEBUG
+  printf(
+      "Waiting successful for the process %u, thread %u. \n",
+      process_info->dwProcessId,
+      process_info->dwThreadId
+  );
+#endif /* !NDEBUG */
 }
 
 static void StackData_InitFuncs(struct StackData* stack_data) {
@@ -142,48 +223,110 @@ static void StackData_InitFuncs(struct StackData* stack_data) {
   stack_data->VirtualFree_ptr = &VirtualFree;
 }
 
+static void StackData_ReadFromProcess(
+    struct StackData* stack_data,
+    const PROCESS_INFORMATION* process_info,
+    const void* stack_data_address
+) {
+  BOOL is_read_process_memory_success;
+  size_t num_bytes_read;
+
+  is_read_process_memory_success = ReadProcessMemory(
+      process_info->hProcess,
+      stack_data_address,
+      stack_data,
+      sizeof(*stack_data),
+      &num_bytes_read
+  );
+
+  if (!is_read_process_memory_success) {
+    printf("Read: %u \n", num_bytes_read);
+
+    ExitOnWindowsFunctionFailureWithLastError(
+        L"ReadProcessMemory",
+        GetLastError()
+    );
+  }
+}
+
+static void StackData_WriteToProcess(
+    const struct StackData* stack_data,
+    const PROCESS_INFORMATION* process_info,
+    void* stack_data_address
+) {
+  BOOL is_write_process_memory_success;
+  size_t num_bytes_written;
+
+  is_write_process_memory_success = WriteProcessMemory(
+      process_info->hProcess,
+      stack_data_address,
+      stack_data,
+      sizeof(*stack_data),
+      &num_bytes_written
+  );
+
+  if (!is_write_process_memory_success) {
+    printf("Written: %u \n", num_bytes_written);
+
+    ExitOnWindowsFunctionFailureWithLastError(
+        L"WriteProcessMemory",
+        GetLastError()
+    );
+  }
+}
+
 static int InjectLibrariesToProcess(
     const PROCESS_INFORMATION* process_info,
     size_t num_libraries,
     const wchar_t** libraries_to_inject,
     const size_t* libraries_to_inject_lens
 ) {
-  const unsigned char kNullBuffer[] = { 0x00, 0x00, 0x00, 0x00 };
+  enum FuncConstant {
+    VIRTUAL_PROTECT_REGION_SIZE = 2048
+  };
 
   size_t i_library;
 
-  void* data_address;
-  void* entry_hijack_patch_address;
+  void* entry_point_address;
+  DWORD old_entry_point_protect;
+
   void* stack_data_address;
-  DWORD old_data_address_protect;
   DWORD old_stack_data_protect;
+
+  DWORD old_lib_path_protect;
+
   struct StackData stack_data_copy;
+  struct StackData compare_stack_data_copy;
+  int compare_stack_data_result;
+
   char* library_to_inject_mb;
   size_t library_to_inject_mb_size;
-  size_t num_bytes_read_write_process_memory;
 
-  struct BufferPatch entry_hijack_patch;
-  struct BufferPatch payload_patch;
-  struct BufferPatch space_data_patch;
+  struct InjectorPatches injector_patches;
 
   DWORD resume_thread_result;
   BOOL is_read_process_memory_success;
   BOOL is_write_process_memory_success;
+  size_t num_bytes_read_write_process_memory;
   BOOL is_virtual_protect_ex_success;
 
-  printf("%u \n", sizeof(stack_data_copy));
+  entry_point_address = PeHeader_GetHardEntryPointAddress(&pe_header);
 
-  /* Get the address of the data and the address of the patch location. */
-  data_address = PeHeader_GetHardDataAddress(&pe_header);
-  entry_hijack_patch_address = GetEntryHijackPatchAddress(&pe_header);
+  /*
+  * Change the access protection of the entry point to enable write
+  * and execute.
+  */
 
-  /* Change the access protection of the data to enable write and execute. */
+#if !NDEBUG
+  printf("Changing entry point memory access permissions. \n");
+#endif /* NDEBUG */
+
   is_virtual_protect_ex_success = VirtualProtectEx(
       process_info->hProcess,
-      data_address,
-      1024,
+      entry_point_address,
+      VIRTUAL_PROTECT_REGION_SIZE,
       PAGE_EXECUTE_READWRITE,
-      &old_data_address_protect
+      &old_entry_point_protect
   );
 
   if (!is_virtual_protect_ex_success) {
@@ -193,39 +336,26 @@ static int InjectLibrariesToProcess(
     );
   }
 
-  /* Initialize the patches. */
-  PayloadPatch_Init(
-      &payload_patch,
-      (void* (*)(void)) ((unsigned char*) data_address + sizeof(void*)),
-      process_info
-  );
+#if !NDEBUG
+  printf("Successfully changed entry point memory access permissions. \n");
+#endif /* NDEBUG */
 
-  BufferPatch_Init(
-      &null_data_patch,
-      (void*) entry_hijack_patch_address,
-      sizeof(data_address),
-      kNullBuffer,
+  InjectorPatches_Init(
+      &injector_patches,
+      &pe_header,
       process_info
-  );
-
-  /*
-  * Entry hijack comes last, because we want to deinit it first so the
-  * original game code execution can be resumed.
-  */
-  EntryHijackPatch_Init(
-      &entry_hijack_patch,
-      (void* (*)(void)) entry_hijack_patch_address,
-      process_info,
-      &pe_header
   );
 
   /* Patch the entry function and add the payload to the game. */
-  BufferPatch_Apply(&entry_hijack_patch);
-  BufferPatch_Apply(&payload_patch);
-  BufferPatch_Apply(&null_data_patch);
+  BufferPatch_Apply(&injector_patches.entry_hijack_patch);
+  BufferPatch_Apply(&injector_patches.payload_patch);
 
+#if !NDEBUG
+  printf("Attach a debugger to the game process and then press enter. \n");
+  getc(stdin);
+#endif /* !NDEBUG */
 
-  /* Resume game thread. */
+  /* Resume game thread to get the game to the payload checkpoint. */
   resume_thread_result = ResumeThread(process_info->hThread);
 
   if (resume_thread_result == -1) {
@@ -235,13 +365,17 @@ static int InjectLibrariesToProcess(
     );
   }
 
-
-  /* Get the stack address. */
+  /*
+  * Get the stack address. Runs in an spinlock because SuspendThread
+  * is not yet available in the payload function.
+  */
   stack_data_address = NULL;
   do {
     is_read_process_memory_success = ReadProcessMemory(
         process_info->hProcess,
-        data_address,
+        (unsigned char*) injector_patches.entry_hijack_patch.position
+            + EntryHijackPatch_GetSize()
+            - sizeof(void*),
         &stack_data_address,
         sizeof(stack_data_address),
         &num_bytes_read_write_process_memory
@@ -257,68 +391,90 @@ static int InjectLibrariesToProcess(
     }
   } while (stack_data_address == NULL);
 
-  MessageBoxA(0, "mnbnmnb", "", MB_OK);
+#if !NDEBUG
+  printf("Stack data address: %p \n", stack_data_address);
+#endif /* NDEBUG */
 
   /*
-  * Change the access protection of the stack data to enable write and
-  * execute.
+  * Change the access protection of the stack data to enable read and
+  * write.
   */
-  is_virtual_protect_ex_success = VirtualProtectEx(
+
+#if !NDEBUG
+  printf("Changing stack data memory access permissions. \n");
+#endif /* !NDEBUG */
+
+  /*is_virtual_protect_ex_success = VirtualProtectEx(
       process_info->hProcess,
       stack_data_address,
-      1024,
+      VIRTUAL_PROTECT_REGION_SIZE,
       PAGE_READWRITE,
       &old_stack_data_protect
   );
 
-
-  /* Read the initial stack data. */
-  is_read_process_memory_success = ReadProcessMemory(
-      process_info->hProcess,
-      stack_data_address,
-      &stack_data_copy,
-      sizeof(stack_data_copy),
-      &num_bytes_read_write_process_memory
-  );
-
-  if (!is_read_process_memory_success) {
-    printf("Read: %u \n", num_bytes_read_write_process_memory);
-
+  if (!is_virtual_protect_ex_success) {
     ExitOnWindowsFunctionFailureWithLastError(
-        L"ReadProcessMemory",
+        L"VirtualProtectEx",
         GetLastError()
     );
-  }
+  }*/
+
+#if !NDEBUG
+  printf("Successfully changed stack data memory access permissions. \n");
+#endif /* NDEBUG */
+
+  /* Read the initial stack data. */
+  StackData_ReadFromProcess(
+      &stack_data_copy,
+      process_info,
+      stack_data_address
+  );
 
   /* Init the stack data. */
   stack_data_copy.num_libs = num_libraries;
-  stack_data_copy.is_ready_to_execute = 1;
   StackData_InitFuncs(&stack_data_copy);
 
-  is_write_process_memory_success = WriteProcessMemory(
-      process_info->hProcess,
-      stack_data_address,
+  StackData_WriteToProcess(
       &stack_data_copy,
-      sizeof(stack_data_copy),
-      &num_bytes_read_write_process_memory
+      process_info,
+      stack_data_address
   );
 
-  if (!is_write_process_memory_success) {
-    printf("Written: %u \n", num_bytes_read_write_process_memory);
+  /*
+  * Apply the cleanup patch, now that the game process is no longer in
+  * the vanilla code space.
+  */
+  BufferPatch_Apply(&injector_patches.cleanup_patch);
 
-    ExitOnWindowsFunctionFailureWithLastError(
-        L"WriteProcessMemory",
-        GetLastError()
-    );
-  }
+  /*
+  * End spinlock, which will resume execution. This needs to happen
+  * the stack data initialization after due to partial write race
+  * condition.
+  */
+  stack_data_copy.is_ready_to_execute = 1;
+
+  StackData_WriteToProcess(
+      &stack_data_copy,
+      process_info,
+      stack_data_address
+  );
 
   /* Inject every library. */
   for (i_library = 0; i_library < num_libraries; i_library += 1) {
+
+#if !NDEBUG
+    printf("Injecting: %ls \n", libraries_to_inject[i_library]);
+#endif /* NDEBUG */
+
     /* Since LoadLibraryA is being used, convert the string to multibyte. */
     library_to_inject_mb = ConvertWideToMultibyte(
         NULL,
         libraries_to_inject[i_library]
     );
+
+#if !NDEBUG
+    printf("Converted string: %s \n", library_to_inject_mb);
+#endif /* NDEBUG */
 
     /* Check that the process has suspended itself. */
     WaitForProcessSuspend(process_info);
@@ -327,8 +483,29 @@ static int InjectLibrariesToProcess(
     library_to_inject_mb_size = (libraries_to_inject_lens[i_library] + 1)
         * sizeof(library_to_inject_mb[0]);
 
+    StackData_ReadFromProcess(
+        &stack_data_copy,
+        process_info,
+        stack_data_address
+    );
+
     while (stack_data_copy.lib_path_size < library_to_inject_mb_size) {
+
+#if !NDEBUG
+      printf(
+          "Requesting lib path resize; requires size of %u, got %u \n",
+          library_to_inject_mb_size,
+          stack_data_copy.lib_path_size
+      );
+#endif /* NDEBUG */
+
       stack_data_copy.is_lib_resize_needed = 1;
+
+      StackData_WriteToProcess(
+          &stack_data_copy,
+          process_info,
+          stack_data_address
+      );
 
       resume_thread_result = ResumeThread(process_info->hThread);
 
@@ -341,32 +518,52 @@ static int InjectLibrariesToProcess(
 
       WaitForProcessSuspend(process_info);
 
-      is_read_process_memory_success = ReadProcessMemory(
-          process_info->hProcess,
-          stack_data_address,
+      StackData_ReadFromProcess(
           &stack_data_copy,
-          sizeof(stack_data_copy),
-          NULL
+          process_info,
+          stack_data_address
       );
-
-      if (!is_read_process_memory_success) {
-        ExitOnWindowsFunctionFailureWithLastError(
-            L"ReadProcessMemory",
-            GetLastError()
-        );
-      }
     }
+
+#if !NDEBUG
+    printf("Library path address: %p \n", stack_data_copy.lib_path);
+    printf("Library path size: %u \n", stack_data_copy.lib_path_size);
+#endif /* !NDEBUG */
 
     /*
     * Size is sufficient, so copy the library's path to the process's
     * free space.
     */
+
+#if !NDEBUG
+    printf("Changing VirtualAlloc memory access permissions. \n");
+#endif /* !NDEBUG */
+
+    /*is_virtual_protect_ex_success = VirtualProtectEx(
+        process_info->hProcess,
+        stack_data_copy.lib_path,
+        library_to_inject_mb_size,
+        PAGE_READWRITE,
+        &old_lib_path_protect
+    );
+
+    if (is_virtual_protect_ex_success) {
+      ExitOnWindowsFunctionFailureWithLastError(
+          L"VirtualProtectEx",
+          GetLastError()
+      );
+    }*/
+
+#if !NDEBUG
+    printf("Successfully changed VirtualAlloc memory access permissions. \n");
+    printf("Writing to VirtualAlloc memory. \n");
+#endif /* !NDEBUG */
+
     is_write_process_memory_success = WriteProcessMemory(
         process_info->hProcess,
-        stack_data_copy.lib_path_ptr,
+        stack_data_copy.lib_path,
         library_to_inject_mb,
-        (libraries_to_inject_lens[i_library] + 1)
-            * sizeof(library_to_inject_mb[0]),
+        library_to_inject_mb_size,
         NULL
     );
 
@@ -376,6 +573,32 @@ static int InjectLibrariesToProcess(
           GetLastError()
       );
     }
+
+#if !NDEBUG
+    printf("Successfully written to VirtualAlloc memory. \n");
+    printf("Restoring VirtualAlloc memory access permissions. \n");
+#endif /* !NDEBUG */
+
+    /*is_virtual_protect_ex_success = VirtualProtectEx(
+        process_info->hProcess,
+        stack_data_copy.lib_path,
+        library_to_inject_mb_size,
+        old_lib_path_protect,
+        &old_lib_path_protect
+    );
+
+    if (is_virtual_protect_ex_success) {
+      ExitOnWindowsFunctionFailureWithLastError(
+          L"VirtualProtectEx",
+          GetLastError()
+      );
+    }*/
+
+#if !NDEBUG
+    printf(
+        "Successfully restored VirtualAlloc memory access permissions. \n"
+    );
+#endif /* !NDEBUG */
 
 free_library_to_inject_mb:
     free(library_to_inject_mb);
@@ -391,11 +614,76 @@ free_library_to_inject_mb:
     }
   }
 
+  /*
+  * Wait for process to make one suspend stop, then wait for process
+  * to jump to the cleanup func space.
+  */
+  WaitForProcessSuspend(process_info);
+
+  resume_thread_result = ResumeThread(process_info->hThread);
+
+  if (resume_thread_result == -1) {
+    ExitOnWindowsFunctionFailureWithLastError(
+        L"ResumeThread",
+        GetLastError()
+    );
+  }
+
+  WaitForProcessSuspend(process_info);
+
+  /* Read the current state of the stack for a later comparison. */
+  StackData_ReadFromProcess(
+      &stack_data_copy,
+      process_info,
+      stack_data_address
+  );
+
+  /* Restore the original code of the entry hijack and the payload. */
+  BufferPatch_Remove(&injector_patches.payload_patch);
+  BufferPatch_Remove(&injector_patches.entry_hijack_patch);
+
+  /* Resume game thread, which will allow the game to continue like normal. */
+  resume_thread_result = ResumeThread(process_info->hThread);
+
+  if (resume_thread_result == -1) {
+    ExitOnWindowsFunctionFailureWithLastError(
+        L"ResumeThread",
+        GetLastError()
+    );
+  }
+
+  /*
+  * Infinite loop read the stack values and determine if the values
+  * are no longer the same. This guarantees that the program is no
+  * longer in the cleanup space and the original code can now be
+  * restored.
+  */
+  do {
+    StackData_ReadFromProcess(
+        &compare_stack_data_copy,
+        process_info,
+        stack_data_address
+    );
+
+    compare_stack_data_result = memcmp(
+        &compare_stack_data_copy,
+        &stack_data_copy,
+        sizeof(stack_data_copy)
+    );
+  } while (compare_stack_data_result == 0);
+
+  BufferPatch_Remove(&injector_patches.cleanup_patch);
+
   /* Restore the access protection of the stack data. */
-  is_virtual_protect_ex_success = VirtualProtectEx(
+
+#if !NDEBUG
+  printf("Restoring stack data memory access permissions. \n");
+#endif /* !NDEBUG */
+
+  /*is_virtual_protect_ex_success = VirtualProtectEx(
       process_info->hProcess,
-      data_address,
-      1024,
+      stack_data_address,
+      VIRTUAL_PROTECT_REGION_SIZE,
       old_stack_data_protect,
       &old_stack_data_protect
   );
@@ -405,28 +693,27 @@ free_library_to_inject_mb:
         L"VirtualProtectEx",
         GetLastError()
     );
-  }
+  }*/
 
-  /* Restore the entry code to the original. */
-deinit_entry_hijack_patch:
-  EntryHijackPatch_Deinit(&entry_hijack_patch);
+#if !NDEBUG
+  printf("Successfully restored stack data memory access permissions. \n");
+#endif /* !NDEBUG */
 
-  ResumeThread(process_info->hThread);
+  /* Cleanup the patches. */
+  InjectorPatches_Deinit(&injector_patches);
 
-  /* Cleanup remaining patches. */
-deinit_null_data_patch:
-  BufferPatch_Deinit(&null_data_patch);
+  /* Restore the access protection of the entry point. */
 
-deinit_payload_patch:
-  PayloadPatch_Deinit(&payload_patch);
+#if !NDEBUG
+  printf("Restoring entry point memory access permissions. \n");
+#endif /* !NDEBUG */
 
-  /* Restore the access protection of the data address. */
   is_virtual_protect_ex_success = VirtualProtectEx(
       process_info->hProcess,
-      data_address,
-      1024,
-      old_data_address_protect,
-      &old_data_address_protect
+      entry_point_address,
+      VIRTUAL_PROTECT_REGION_SIZE,
+      old_entry_point_protect,
+      &old_entry_point_protect
   );
 
   if (!is_virtual_protect_ex_success) {
@@ -435,6 +722,10 @@ deinit_payload_patch:
         GetLastError()
     );
   }
+
+#if !NDEBUG
+  printf("Successfully restored entry point memory access permissions. \n");
+#endif /* !NDEBUG */
 
   return 1;
 }

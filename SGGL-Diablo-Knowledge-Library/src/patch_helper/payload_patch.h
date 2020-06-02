@@ -38,6 +38,7 @@
 struct BufferPatch* PayloadPatch_Init(
     struct BufferPatch* buffer_patch,
     void* (*patch_address)(void),
+    void* (*cleanup_func_address)(void),
     const PROCESS_INFORMATION* process_info
 );
 

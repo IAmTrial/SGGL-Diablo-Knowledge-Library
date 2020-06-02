@@ -38,6 +38,16 @@ static const unsigned char kFuncEnd[] = {
 };
 
 __declspec(naked) static void __stdcall CleanupFunc(void** top_of_stack) {
+  /* Suspend the thread so that the other patches can be undone. */
+  ASM_X86(push dword ptr [ebp - 8]);
+  ASM_X86(call dword ptr [ebp - 76]);   /* SuspendThread(...); */
+
+  /* Function epilogue. */
+  ASM_X86(add esp, 192);
+  ASM_X86(popad);
+
+  ASM_X86(ret 4);
+
   /* Hex for 8 0x90, which is used to detect the end of the function. */
   ASM_X86(nop);
   ASM_X86(nop);
@@ -89,7 +99,7 @@ void CleanupPatch_Deinit(struct BufferPatch* buffer_patch) {
 }
 
 size_t CleanupPatch_GetSize(void) {
-  static size_t cleanup_func_size;
+  static size_t cleanup_func_size = 0;
 
   if (cleanup_func_size == 0) {
     InitFuncSize(&cleanup_func_size);

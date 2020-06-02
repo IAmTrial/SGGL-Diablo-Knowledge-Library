@@ -38,9 +38,6 @@ static const unsigned char kFuncEnd[] = {
 };
 
 __declspec(naked) static void __stdcall PayloadFunc(void** top_of_stack) {
-  /* Allow the return address to go back to the original code. */
-  ASM_X86(sub dword ptr [esp], 5);
-
   /* Function prologue */
   ASM_X86(pushad);
   ASM_X86(mov ebp, esp);
@@ -56,15 +53,17 @@ __declspec(naked) static void __stdcall PayloadFunc(void** top_of_stack) {
   * -16: lib_path_size, can be read by SGGL
   * -20: lib_path_ptr, data inside can be modified by SGGL
   * -24: is_ready_to_execute, can be modified by SGGL
-  * -28 to -64: reserved, for variables
+  * -28: is_ready_to_exit, can be modified by SGGL
+  * -32 to -64: reserved, for variables
   * -68: VirtualFree
   * -72: VirtualAlloc
   * -76: SuspendThread
   * -80: GetCurrentThread
   * -84: LoadLibraryA
   * -88 to -128: reserved, for kernel functions
+  * -132 to -192: reserved, for local jump offsets
   */
-  ASM_X86(sub esp, 128);
+  ASM_X86(sub esp, 192);
 
   /*
   * This must occur before the *top_of_stack is init to prevent
@@ -83,6 +82,9 @@ ASM_X86_LABEL(SpinlockWaitForInitReady)
   /* is_lib_resize_needed = 1; */
   ASM_X86(mov dword ptr [ebp - 12], 1);
 
+  /* is_ready_to_exit = 0; */
+  ASM_X86(mov dword ptr [ebp - 28], 0);
+
   /* current_thread_handle = GetCurrentThread(); */
   ASM_X86(call dword ptr [ebp - 80]);
   ASM_X86(mov dword ptr [ebp - 8], eax);
@@ -94,7 +96,7 @@ ASM_X86_LABEL(SpinlockWaitForInitReady)
 
 ASM_X86_LABEL(PayloadFunc_ReallocPath)
   /* Free lib_path_ptr for reallocation. */
-  ASM_X86(push 0x800);                  /* MEM_RELEASE */
+  ASM_X86(push 0x00000800);             /* MEM_RELEASE */
   ASM_X86(push 0);
   ASM_X86(push dword ptr [ebp - 20]);   /* lib_path_ptr */
   ASM_X86(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
@@ -104,7 +106,7 @@ ASM_X86_LABEL(PayloadFunc_ReallocPath)
 
   /* Allocate space for the path. */
 ASM_X86_LABEL(PayloadFunc_AllocPath)
-  ASM_X86(push 0x4);                    /* PAGE_READWRITE */
+  ASM_X86(push 0x00000004);             /* PAGE_READWRITE */
   ASM_X86(push 0x00003000);             /* MEM_COMMIT | MEM_RESERVE */
   ASM_X86(push dword ptr [ebp - 16]);   /* lib_path_size */
   ASM_X86(push 0);                      /* NULL */
@@ -143,11 +145,15 @@ ASM_X86_LABEL(PayloadFunc_End)
   ASM_X86(push dword ptr [ebp - 20]);   /* lib_path_ptr */
   ASM_X86(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
 
-  /* Function epilogue */
-  ASM_X86(add esp, 128);
-  ASM_X86(popad);
-
-  ASM_X86(ret 4);
+  /*
+  * Jump to the cleanup function. These are 5 bytes of dummies to
+  * ensure there is space for the 4 byte jump op.
+  */
+  ASM_X86(int 3);
+  ASM_X86(int 3);
+  ASM_X86(int 3);
+  ASM_X86(int 3);
+  ASM_X86(int 3);
 
   /* Hex for 8 0x90, which is used to detect the end of the function. */
   ASM_X86(nop);
@@ -182,8 +188,11 @@ static void InitFuncSize(size_t* func_size) {
 struct BufferPatch* PayloadPatch_Init(
     struct BufferPatch* buffer_patch,
     void* (*patch_address)(void),
+    void* (*cleanup_func_address)(void),
     const PROCESS_INFORMATION* process_info
 ) {
+  unsigned char* cleanup_func_offset;
+  size_t i_end_jmp_op;
 
   BufferPatch_Init(
       buffer_patch,
@@ -191,6 +200,21 @@ struct BufferPatch* PayloadPatch_Init(
       PayloadPatch_GetSize(),
       (void*) &PayloadFunc,
       process_info
+  );
+
+  /* Set the last bytes of the ppatch buffer to jump to the cleanup function. */
+  i_end_jmp_op = PayloadPatch_GetSize() - sizeof(void*) - 1;
+
+  buffer_patch->patch_buffer[i_end_jmp_op] = 0xE9;
+
+  cleanup_func_offset = (unsigned char*) cleanup_func_address
+      - (size_t) patch_address
+      - PayloadPatch_GetSize();
+
+  memcpy(
+      &buffer_patch->patch_buffer[i_end_jmp_op + 1],
+      &cleanup_func_offset,
+      sizeof(cleanup_func_offset)
   );
 
   return buffer_patch;
