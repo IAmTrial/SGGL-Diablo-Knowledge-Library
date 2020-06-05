@@ -27,26 +27,22 @@
  *  to convey the resulting work.
  */
 
-#ifndef SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_
-#define SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_
+#include "diablo_ii_1_09d_address.h"
 
-#include "1_00/diablo_ii_1_00_address.h"
-#include "1_01/diablo_ii_1_01_address.h"
-#include "1_02/diablo_ii_1_02_address.h"
-#include "1_03/diablo_ii_1_03_address.h"
-#include "1_04b/diablo_ii_1_04b_address.h"
-#include "1_04c/diablo_ii_1_04c_address.h"
-#include "1_05/diablo_ii_1_05_address.h"
-#include "1_05b/diablo_ii_1_05b_address.h"
-#include "1_06/diablo_ii_1_06_address.h"
-#include "1_06b/diablo_ii_1_06b_address.h"
-#include "1_07/diablo_ii_1_07_address.h"
-#include "1_07_beta/diablo_ii_1_07_beta_address.h"
-#include "1_08/diablo_ii_1_08_address.h"
-#include "1_09/diablo_ii_1_09_address.h"
-#include "1_09b/diablo_ii_1_09b_address.h"
-#include "1_09d/diablo_ii_1_09d_address.h"
-#include "1_13c/diablo_ii_1_13c_address.h"
-#include "1_13d/diablo_ii_1_13d_address.h"
+#include <stddef.h>
 
-#endif /* SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_ */
+void* Diablo_II_1_09D_GetEntryHijackPatchAddress(
+    const struct PeHeader* pe_header
+) {
+  void* hard_entry_point_address;
+  size_t offset;
+
+  hard_entry_point_address = PeHeader_GetHardEntryPointAddress(
+      pe_header
+  );
+
+  offset = 0x225F2 - 0x225CC;
+
+  return (unsigned char*) hard_entry_point_address
+      + (size_t) (offset);
+}

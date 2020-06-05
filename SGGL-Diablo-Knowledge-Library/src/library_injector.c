@@ -31,7 +31,9 @@
 
 #include <stdio.h>
 
+#include "diablo/diablo_address.h"
 #include "diablo_ii/diablo_ii_address.h"
+#include "hellfire/hellfire_address.h"
 #include "game_version.h"
 #include "game_version_enum.h"
 #include "helper/encoding.h"
@@ -62,6 +64,114 @@ static void* GetEntryHijackPatchAddress(
   }
 
   switch (running_game_version) {
+    case DIABLO_1_00: {
+      return Diablo_1_00_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_02: {
+      return Diablo_1_02_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_03: {
+      return Diablo_1_03_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_04: {
+      return Diablo_1_04_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_05: {
+      return Diablo_1_05_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_07: {
+      return Diablo_1_07_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_08: {
+      return Diablo_1_08_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_09: {
+      return Diablo_1_09_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_1_09B: {
+      return Diablo_1_09B_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case HELLFIRE_1_00: {
+      return Hellfire_1_00_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case HELLFIRE_1_01: {
+      return Hellfire_1_01_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_00: {
+      return Diablo_II_1_00_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_01: {
+      return Diablo_II_1_01_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_02: {
+      return Diablo_II_1_02_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_03: {
+      return Diablo_II_1_03_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_04B: {
+      return Diablo_II_1_04B_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_04C: {
+      return Diablo_II_1_04C_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_05: {
+      return Diablo_II_1_05_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_05B: {
+      return Diablo_II_1_05B_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_06: {
+      return Diablo_II_1_06_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_06B: {
+      return Diablo_II_1_06B_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_07_BETA: {
+      return Diablo_II_1_07Beta_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_07: {
+      return Diablo_II_1_07_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_08: {
+      return Diablo_II_1_08_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_09: {
+      return Diablo_II_1_09_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_09B: {
+      return Diablo_II_1_09B_GetEntryHijackPatchAddress(pe_header);
+    }
+
+    case DIABLO_II_1_09D: {
+      return Diablo_II_1_09D_GetEntryHijackPatchAddress(pe_header);
+    }
+
     case DIABLO_II_1_13C: {
       return Diablo_II_1_13C_GetEntryHijackPatchAddress(pe_header);
     }
