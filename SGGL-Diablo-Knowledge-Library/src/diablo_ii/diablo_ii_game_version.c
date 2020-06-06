@@ -176,7 +176,7 @@ static const struct GameVersionSignature k1001GameVersionSignatureTable[] = {
             0xF0,
             { 0x79, 0xBD, 0x20, 0x39 }
         },
-        DIABLO_II_1_02_STRESS_TEST_BETA
+        DIABLO_II_STRESS_TEST_BETA_1_02
     },
     {
         {
@@ -184,7 +184,7 @@ static const struct GameVersionSignature k1001GameVersionSignatureTable[] = {
             0xF0,
             { 0xB7, 0x70, 0xD0, 0x38 }
         },
-        DIABLO_II_1_02_BETA
+        DIABLO_II_BETA_1_02
     },
     {
         {

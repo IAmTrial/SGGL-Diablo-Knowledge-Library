@@ -41,7 +41,7 @@ static const char* GetGameName(enum GameVersion game_version) {
   } else if (game_version >= HELLFIRE_1_00
       && game_version <= HELLFIRE_1_01) {
     return "Hellfire";
-  } else if (game_version >= DIABLO_II_1_02_BETA
+  } else if (game_version >= DIABLO_II_BETA_1_02
       && game_version <= DIABLO_II_1_14D) {
     return "Diablo II";
   } else if (game_version == VERSION_UNKNOWN) {
@@ -102,11 +102,11 @@ static const char* GetVersionText(enum GameVersion game_version) {
       return "1.01";
     }
 
-    case DIABLO_II_1_02_BETA: {
+    case DIABLO_II_BETA_1_02: {
       return "Beta 1.02";
     }
 
-    case DIABLO_II_1_02_STRESS_TEST_BETA: {
+    case DIABLO_II_STRESS_TEST_BETA_1_02: {
       return "Beta Stress Test 1.02";
     }
 

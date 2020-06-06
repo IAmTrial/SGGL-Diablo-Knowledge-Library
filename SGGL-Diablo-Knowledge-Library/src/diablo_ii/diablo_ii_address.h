@@ -30,6 +30,8 @@
 #ifndef SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_
 #define SGGLDKL_DIABLO_II_DIABLO_II_ADDRESS_H_
 
+#include "beta_1_02/diablo_ii_beta_1_02_address.h"
+#include "beta_stress_test_1_02/diablo_ii_beta_stress_test_1_02_address.h"
 #include "1_00/diablo_ii_1_00_address.h"
 #include "1_01/diablo_ii_1_01_address.h"
 #include "1_02/diablo_ii_1_02_address.h"
@@ -46,6 +48,13 @@
 #include "1_09/diablo_ii_1_09_address.h"
 #include "1_09b/diablo_ii_1_09b_address.h"
 #include "1_09d/diablo_ii_1_09d_address.h"
+#include "1_10_beta/diablo_ii_1_10_beta_address.h"
+#include "1_10s_beta/diablo_ii_1_10s_beta_address.h"
+#include "1_10/diablo_ii_1_10_address.h"
+#include "1_11/diablo_ii_1_11_address.h"
+#include "1_11b/diablo_ii_1_11b_address.h"
+#include "1_12a/diablo_ii_1_12a_address.h"
+#include "1_13a_ptr/diablo_ii_1_13a_ptr_address.h"
 #include "1_13c/diablo_ii_1_13c_address.h"
 #include "1_13d/diablo_ii_1_13d_address.h"
 
