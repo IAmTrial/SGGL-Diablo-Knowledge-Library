@@ -39,50 +39,7 @@
 #include "patch_helper/game_address.h"
 #include "patch_helper/injector_patches.h"
 #include "patch_helper/pe_header.h"
-
-/*
-* This struct must be completely synced with the stack data in
-* entry_hijack_patch->PayloadFunc. Note these values should be
-* offset +4 from the description.
-*
-* -4: num_libs, needs to be inited by SGGL
-* -8: current_thread_handle
-* -12: is_lib_resize_needed, can be modified by SGGL
-* -16: lib_path_size, can be read by SGGL
-* -20: lib_path_ptr, data inside can be modified by SGGL
-* -24: is_ready_to_execute, can be modified by SGGL
-* -28: is_ready_to_exit, can be modified by SGGL
-* -32 to -64: reserved, for variables
-* -68: VirtualFree
-* -72: VirtualAlloc
-* -76: SuspendThread
-* -80: GetCurrentThread
-* -84: LoadLibraryA
-* -88 to -128: reserved, for kernel functions
-* -132 to -192: reserved, for local jump offsets
-*/
-#pragma pack(push, 1)
-struct StackData {
-  unsigned int reserved_local_jump_offsets[(192 - 128) / 4];
-  unsigned int reserved_kernel_func_ptr[(128 - 84) / 4];
-
-  HMODULE (WINAPI *LoadLibraryA_ptr)(LPCSTR);
-  HANDLE (WINAPI *GetCurrentThread_ptr)(void);
-  DWORD (WINAPI *SuspendThread_ptr)(HANDLE);
-  void* (WINAPI *VirtualAlloc_ptr)(void*, DWORD, DWORD, DWORD);
-  BOOL (WINAPI *VirtualFree_ptr)(void*, DWORD, DWORD);
-
-  unsigned int reserved_variable_ptr[(64 - 28) / 4];
-
-  int is_ready_to_exit;
-  int is_ready_to_execute;
-  char* lib_path;
-  size_t lib_path_size;
-  int is_lib_resize_needed;
-  DWORD current_thread_handle;
-  size_t num_libs;
-};
-#pragma pack(pop)
+#include "patch_helper/stack_data.h"
 
 static struct PeHeader pe_header;
 
@@ -130,66 +87,6 @@ static void WaitForProcessSuspend(const PROCESS_INFORMATION* process_info) {
       process_info->dwThreadId
   );
 #endif /* !NDEBUG */
-}
-
-static void StackData_InitFuncs(struct StackData* stack_data) {
-  stack_data->LoadLibraryA_ptr = &LoadLibraryA;
-  stack_data->GetCurrentThread_ptr = &GetCurrentThread;
-  stack_data->SuspendThread_ptr = &SuspendThread;
-  stack_data->VirtualAlloc_ptr = &VirtualAlloc;
-  stack_data->VirtualFree_ptr = &VirtualFree;
-}
-
-static void StackData_ReadFromProcess(
-    struct StackData* stack_data,
-    const PROCESS_INFORMATION* process_info,
-    const void* stack_data_address
-) {
-  BOOL is_read_process_memory_success;
-  size_t num_bytes_read;
-
-  is_read_process_memory_success = ReadProcessMemory(
-      process_info->hProcess,
-      stack_data_address,
-      stack_data,
-      sizeof(*stack_data),
-      &num_bytes_read
-  );
-
-  if (!is_read_process_memory_success) {
-    printf("Read: %u \n", num_bytes_read);
-
-    ExitOnWindowsFunctionFailureWithLastError(
-        L"ReadProcessMemory",
-        GetLastError()
-    );
-  }
-}
-
-static void StackData_WriteToProcess(
-    const struct StackData* stack_data,
-    const PROCESS_INFORMATION* process_info,
-    void* stack_data_address
-) {
-  BOOL is_write_process_memory_success;
-  size_t num_bytes_written;
-
-  is_write_process_memory_success = WriteProcessMemory(
-      process_info->hProcess,
-      stack_data_address,
-      stack_data,
-      sizeof(*stack_data),
-      &num_bytes_written
-  );
-
-  if (!is_write_process_memory_success) {
-    printf("Written: %u \n", num_bytes_written);
-
-    ExitOnWindowsFunctionFailureWithLastError(
-        L"WriteProcessMemory",
-        GetLastError()
-    );
-  }
 }
 
 static int InjectLibrariesToProcess(
