@@ -59,7 +59,6 @@ static enum GameVersion SearchGameVersionTable(
   hellfire_product_version_search_key = {
       { hellfire_file_version_str }
   };
-  printf("%ls \n", hellfire_file_version_str);
 
   /* Search on the game executable product version. */
   search_result = (const struct ShortVersionStringAndGameVersionEntry*) bsearch(
