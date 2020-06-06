@@ -36,71 +36,9 @@
 #include "helper/encoding.h"
 #include "helper/error_handling.h"
 #include "patch_helper/buffer_patch.h"
-#include "patch_helper/cleanup_patch.h"
-#include "patch_helper/entry_hijack_patch.h"
 #include "patch_helper/game_address.h"
-#include "patch_helper/payload_patch.h"
+#include "patch_helper/injector_patches.h"
 #include "patch_helper/pe_header.h"
-
-static struct InjectorPatches {
-  struct BufferPatch entry_hijack_patch;
-  struct BufferPatch payload_patch;
-  struct BufferPatch cleanup_patch;
-};
-
-struct InjectorPatches* InjectorPatches_Init(
-    struct InjectorPatches* injector_patches,
-    const struct PeHeader* pe_header,
-    const PROCESS_INFORMATION* process_info
-) {
-  void* (*cleanup_patch_address)(void);
-
-  unsigned char* entry_hijack_patch_address;
-  unsigned char* payload_patch_address;
-
-  cleanup_patch_address = PeHeader_GetHardEntryPointAddress(pe_header);
-
-  CleanupPatch_Init(
-      &injector_patches->cleanup_patch,
-      cleanup_patch_address,
-      process_info
-  );
-
-  entry_hijack_patch_address = GetEntryHijackPatchAddress(
-      pe_header,
-      GetRunningGameVersion()
-  );
-
-#if !NDEBUG
-  printf("Entry hijack patch address: %p \n", entry_hijack_patch_address);
-#endif /* !NDEBUG */
-
-  EntryHijackPatch_Init(
-      &injector_patches->entry_hijack_patch,
-      (void* (*)(void)) entry_hijack_patch_address,
-      process_info,
-      pe_header
-  );
-
-  payload_patch_address =
-      (unsigned char*) injector_patches->entry_hijack_patch.position
-          + EntryHijackPatch_GetSize();
-
-  PayloadPatch_Init(
-      &injector_patches->payload_patch,
-      (void* (*)(void)) payload_patch_address,
-      cleanup_patch_address,
-      process_info
-  );
-
-  return injector_patches;
-}
-
-void InjectorPatches_Deinit(struct InjectorPatches* injector_patches) {
-  PayloadPatch_Deinit(&injector_patches->payload_patch);
-  EntryHijackPatch_Deinit(&injector_patches->entry_hijack_patch);
-  CleanupPatch_Deinit(&injector_patches->cleanup_patch);
-}
 
 /*
 * This struct must be completely synced with the stack data in
