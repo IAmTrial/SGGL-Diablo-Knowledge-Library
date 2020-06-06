@@ -36,6 +36,7 @@
 #include "helper/encoding.h"
 #include "helper/error_handling.h"
 #include "patch_helper/buffer_patch.h"
+#include "patch_helper/entry_hijack_patch.h"
 #include "patch_helper/game_address.h"
 #include "patch_helper/injector_patches.h"
 #include "patch_helper/pe_header.h"
@@ -105,9 +106,6 @@ static int InjectLibrariesToProcess(
   DWORD old_entry_point_protect;
 
   void* stack_data_address;
-  DWORD old_stack_data_protect;
-
-  DWORD old_lib_path_protect;
 
   struct StackData stack_data_copy;
   struct StackData compare_stack_data_copy;

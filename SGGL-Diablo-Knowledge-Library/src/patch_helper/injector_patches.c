@@ -29,9 +29,14 @@
 
 #include "injector_patches.h"
 
+#include <stdio.h>
+
+#include "../game_version.h"
 #include "cleanup_patch.h"
 #include "entry_hijack_patch.h"
+#include "game_address.h"
 #include "payload_patch.h"
+#include "pe_header.h"
 
 struct InjectorPatches* InjectorPatches_Init(
     struct InjectorPatches* injector_patches,
