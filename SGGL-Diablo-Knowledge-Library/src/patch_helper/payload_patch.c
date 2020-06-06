@@ -186,7 +186,7 @@ static void InitFuncSize(size_t* func_size) {
 }
 
 struct BufferPatch* PayloadPatch_Init(
-    struct BufferPatch* buffer_patch,
+    struct BufferPatch* payload_patch,
     void* (*patch_address)(void),
     void* (*cleanup_func_address)(void),
     const PROCESS_INFORMATION* process_info
@@ -195,7 +195,7 @@ struct BufferPatch* PayloadPatch_Init(
   size_t i_end_jmp_op;
 
   BufferPatch_Init(
-      buffer_patch,
+      payload_patch,
       (void*) patch_address,
       PayloadPatch_GetSize(),
       (void*) &PayloadFunc,
@@ -205,23 +205,23 @@ struct BufferPatch* PayloadPatch_Init(
   /* Set the last bytes of the ppatch buffer to jump to the cleanup function. */
   i_end_jmp_op = PayloadPatch_GetSize() - sizeof(void*) - 1;
 
-  buffer_patch->patch_buffer[i_end_jmp_op] = 0xE9;
+  payload_patch->patch_buffer[i_end_jmp_op] = 0xE9;
 
   cleanup_func_offset = (unsigned char*) cleanup_func_address
       - (size_t) patch_address
       - PayloadPatch_GetSize();
 
   memcpy(
-      &buffer_patch->patch_buffer[i_end_jmp_op + 1],
+      &payload_patch->patch_buffer[i_end_jmp_op + 1],
       &cleanup_func_offset,
       sizeof(cleanup_func_offset)
   );
 
-  return buffer_patch;
+  return payload_patch;
 }
 
-void PayloadPatch_Deinit(struct BufferPatch* buffer_patch) {
-  BufferPatch_Deinit(buffer_patch);
+void PayloadPatch_Deinit(struct BufferPatch* payload_patch) {
+  BufferPatch_Deinit(payload_patch);
 }
 
 size_t PayloadPatch_GetSize(void) {

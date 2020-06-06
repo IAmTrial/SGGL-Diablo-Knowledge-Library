@@ -36,13 +36,13 @@
 #include "buffer_patch.h"
 
 struct BufferPatch* PayloadPatch_Init(
-    struct BufferPatch* buffer_patch,
+    struct BufferPatch* payload_patch,
     void* (*patch_address)(void),
     void* (*cleanup_func_address)(void),
     const PROCESS_INFORMATION* process_info
 );
 
-void PayloadPatch_Deinit(struct BufferPatch* buffer_patch);
+void PayloadPatch_Deinit(struct BufferPatch* payload_patch);
 
 size_t PayloadPatch_GetSize(void);
 

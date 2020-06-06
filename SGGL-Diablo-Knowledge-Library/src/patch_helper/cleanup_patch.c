@@ -79,23 +79,23 @@ static void InitFuncSize(size_t* func_size) {
 }
 
 struct BufferPatch* CleanupPatch_Init(
-    struct BufferPatch* buffer_patch,
+    struct BufferPatch* cleanup_patch,
     void* (*patch_address)(void),
     const PROCESS_INFORMATION* process_info
 ) {
   BufferPatch_Init(
-      buffer_patch,
+      cleanup_patch,
       (void*) patch_address,
       CleanupPatch_GetSize(),
       (void*) &CleanupFunc,
       process_info
   );
 
-  return buffer_patch;
+  return cleanup_patch;
 }
 
-void CleanupPatch_Deinit(struct BufferPatch* buffer_patch) {
-  BufferPatch_Deinit(buffer_patch);
+void CleanupPatch_Deinit(struct BufferPatch* cleanup_patch) {
+  BufferPatch_Deinit(cleanup_patch);
 }
 
 size_t CleanupPatch_GetSize(void) {

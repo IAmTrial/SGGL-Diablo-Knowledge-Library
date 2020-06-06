@@ -36,12 +36,12 @@
 #include "buffer_patch.h"
 
 struct BufferPatch* CleanupPatch_Init(
-    struct BufferPatch* buffer_patch,
+    struct BufferPatch* cleanup_patch,
     void* (*patch_address)(void),
     const PROCESS_INFORMATION* process_info
 );
 
-void CleanupPatch_Deinit(struct BufferPatch* buffer_patch);
+void CleanupPatch_Deinit(struct BufferPatch* cleanup_patch);
 
 size_t CleanupPatch_GetSize(void);
 
