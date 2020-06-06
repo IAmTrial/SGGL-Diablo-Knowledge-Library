@@ -56,7 +56,7 @@ static const unsigned char kEntryHijackBytes[] = {
 };
 
 struct BufferPatch* EntryHijackPatch_Init(
-    struct BufferPatch* buffer_patch,
+    struct BufferPatch* entry_hijack_patch,
     void* (*patch_address)(void),
     const PROCESS_INFORMATION* process_info,
     const struct PeHeader* pe_header
@@ -64,7 +64,7 @@ struct BufferPatch* EntryHijackPatch_Init(
   unsigned char* free_space_address;
 
   BufferPatch_Init(
-      buffer_patch,
+      entry_hijack_patch,
       (void*) patch_address,
       EntryHijackPatch_GetSize(),
       kEntryHijackBytes,
@@ -76,18 +76,29 @@ struct BufferPatch* EntryHijackPatch_Init(
       - sizeof(void*);
 
   memcpy(
-      &buffer_patch->patch_buffer[1],
+      &entry_hijack_patch->patch_buffer[1],
       &free_space_address,
       sizeof(free_space_address)
   );
 
-  return buffer_patch;
+  return entry_hijack_patch;
 }
 
-void EntryHijackPatch_Deinit(struct BufferPatch* buffer_patch) {
-  BufferPatch_Deinit(buffer_patch);
+void EntryHijackPatch_Deinit(struct BufferPatch* entry_hijack_patch) {
+  BufferPatch_Deinit(entry_hijack_patch);
+}
+
+void* EntryHijackPatch_GetFreeSpaceAddress(
+    const struct BufferPatch* entry_hijack_patch
+) {
+  return (unsigned char*) entry_hijack_patch->position
+      + EntryHijackPatch_GetFreeSpaceOffset();
 }
 
 size_t EntryHijackPatch_GetSize(void) {
   return sizeof(kEntryHijackBytes);
+}
+
+size_t EntryHijackPatch_GetFreeSpaceOffset(void) {
+  return EntryHijackPatch_GetSize() - sizeof(void*);
 }

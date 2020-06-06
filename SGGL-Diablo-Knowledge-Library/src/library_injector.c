@@ -187,9 +187,9 @@ static int InjectLibrariesToProcess(
   do {
     is_read_process_memory_success = ReadProcessMemory(
         process_info->hProcess,
-        (unsigned char*) injector_patches.entry_hijack_patch.position
-            + EntryHijackPatch_GetSize()
-            - sizeof(void*),
+        EntryHijackPatch_GetFreeSpaceAddress(
+            &injector_patches.entry_hijack_patch
+        ),
         &stack_data_address,
         sizeof(stack_data_address),
         &num_bytes_read_write_process_memory

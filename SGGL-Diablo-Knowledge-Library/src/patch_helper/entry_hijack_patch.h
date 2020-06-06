@@ -37,14 +37,20 @@
 #include "pe_header.h"
 
 struct BufferPatch* EntryHijackPatch_Init(
-    struct BufferPatch* buffer_patch,
+    struct BufferPatch* entry_hijack_patch,
     void* (*patch_address)(void),
     const PROCESS_INFORMATION* process_info,
     const struct PeHeader* pe_header
 );
 
-void EntryHijackPatch_Deinit(struct BufferPatch* buffer_patch);
+void EntryHijackPatch_Deinit(struct BufferPatch* entry_hijack_patch);
+
+void* EntryHijackPatch_GetFreeSpaceAddress(
+    const struct BufferPatch* entry_hijack_patch
+);
 
 size_t EntryHijackPatch_GetSize(void);
+
+size_t EntryHijackPatch_GetFreeSpaceOffset(void);
 
 #endif /* SGGLDKL_PATCH_HELPER_ENTRY_HIJACK_PATCH_H_ */
