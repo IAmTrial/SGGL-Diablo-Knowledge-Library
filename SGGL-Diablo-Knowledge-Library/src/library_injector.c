@@ -209,34 +209,6 @@ static int InjectLibrariesToProcess(
   printf("Stack data address: %p \n", stack_data_address);
 #endif /* NDEBUG */
 
-  /*
-  * Change the access protection of the stack data to enable read and
-  * write.
-  */
-
-#if !NDEBUG
-  printf("Changing stack data memory access permissions. \n");
-#endif /* !NDEBUG */
-
-  /*is_virtual_protect_ex_success = VirtualProtectEx(
-      process_info->hProcess,
-      stack_data_address,
-      VIRTUAL_PROTECT_REGION_SIZE,
-      PAGE_READWRITE,
-      &old_stack_data_protect
-  );
-
-  if (!is_virtual_protect_ex_success) {
-    ExitOnWindowsFunctionFailureWithLastError(
-        L"VirtualProtectEx",
-        GetLastError()
-    );
-  }*/
-
-#if !NDEBUG
-  printf("Successfully changed stack data memory access permissions. \n");
-#endif /* NDEBUG */
-
   /* Read the initial stack data. */
   StackData_ReadFromProcess(
       &stack_data_copy,
@@ -350,26 +322,6 @@ static int InjectLibrariesToProcess(
     */
 
 #if !NDEBUG
-    printf("Changing VirtualAlloc memory access permissions. \n");
-#endif /* !NDEBUG */
-
-    /*is_virtual_protect_ex_success = VirtualProtectEx(
-        process_info->hProcess,
-        stack_data_copy.lib_path,
-        library_to_inject_mb_size,
-        PAGE_READWRITE,
-        &old_lib_path_protect
-    );
-
-    if (is_virtual_protect_ex_success) {
-      ExitOnWindowsFunctionFailureWithLastError(
-          L"VirtualProtectEx",
-          GetLastError()
-      );
-    }*/
-
-#if !NDEBUG
-    printf("Successfully changed VirtualAlloc memory access permissions. \n");
     printf("Writing to VirtualAlloc memory. \n");
 #endif /* !NDEBUG */
 
@@ -390,28 +342,6 @@ static int InjectLibrariesToProcess(
 
 #if !NDEBUG
     printf("Successfully written to VirtualAlloc memory. \n");
-    printf("Restoring VirtualAlloc memory access permissions. \n");
-#endif /* !NDEBUG */
-
-    /*is_virtual_protect_ex_success = VirtualProtectEx(
-        process_info->hProcess,
-        stack_data_copy.lib_path,
-        library_to_inject_mb_size,
-        old_lib_path_protect,
-        &old_lib_path_protect
-    );
-
-    if (is_virtual_protect_ex_success) {
-      ExitOnWindowsFunctionFailureWithLastError(
-          L"VirtualProtectEx",
-          GetLastError()
-      );
-    }*/
-
-#if !NDEBUG
-    printf(
-        "Successfully restored VirtualAlloc memory access permissions. \n"
-    );
 #endif /* !NDEBUG */
 
 free_library_to_inject_mb:
@@ -487,31 +417,6 @@ free_library_to_inject_mb:
   } while (compare_stack_data_result == 0);
 
   BufferPatch_Remove(&injector_patches.cleanup_patch);
-
-  /* Restore the access protection of the stack data. */
-
-#if !NDEBUG
-  printf("Restoring stack data memory access permissions. \n");
-#endif /* !NDEBUG */
-
-  /*is_virtual_protect_ex_success = VirtualProtectEx(
-      process_info->hProcess,
-      stack_data_address,
-      VIRTUAL_PROTECT_REGION_SIZE,
-      old_stack_data_protect,
-      &old_stack_data_protect
-  );
-
-  if (!is_virtual_protect_ex_success) {
-    ExitOnWindowsFunctionFailureWithLastError(
-        L"VirtualProtectEx",
-        GetLastError()
-    );
-  }*/
-
-#if !NDEBUG
-  printf("Successfully restored stack data memory access permissions. \n");
-#endif /* !NDEBUG */
 
   /* Cleanup the patches. */
   InjectorPatches_Deinit(&injector_patches);
