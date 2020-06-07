@@ -29,8 +29,7 @@
 
 #include "pe_header.h"
 
-#include <stdio.h>
-#include <stddef.h>
+#include <stdlib.h>
 
 #include "../helper/encoding.h"
 #include "../helper/error_handling.h"
@@ -45,14 +44,11 @@ struct PeHeader* PeHeader_Init(
     const wchar_t* file_path,
     size_t file_path_len
 ) {
-  FILE* file_stream;
+  char* mb_file_path;
+  LOADED_IMAGE* loaded_image;
 
-  int is_fseek_fail;
-  size_t num_fread_objects;
+  pe_header->file_path_len = file_path_len;
 
-  char* file_path_mb;
-
-  /* Store a copy of the file path in the PE header. */
   pe_header->file_path = malloc(
       (file_path_len + 1) * sizeof(pe_header->file_path[0])
   );
@@ -61,151 +57,45 @@ struct PeHeader* PeHeader_Init(
     ExitOnAllocationFailure();
   }
 
-  wcscpy(pe_header->file_path, file_path);
-
-  pe_header->file_path_len = file_path_len;
-
-  /* Convert the path to multibyte characters. */
-  file_path_mb = ConvertWideToMultibyte(NULL, pe_header->file_path);
-
-  /* Open the file for reading, in byte mode. */
-  file_stream = fopen(file_path_mb, "rb");
-
-  if (file_stream == NULL) {
-    ExitOnGeneralFailure(
-        L"Could not open file for reading.",
-        L"Error"
-    );
-  }
-
-  /* Seek to the PE header pointer offset. */
-  is_fseek_fail = fseek(file_stream, PE_HEADER_PTR_OFFSET, SEEK_SET);
-
-  if (is_fseek_fail) {
-    ExitOnGeneralFailure(
-        L"Cannot seek to the file's target offset.",
-        L"Error"
-    );
-  }
-
-  /* Load the start address of the PE file. */
-  num_fread_objects = fread(
-     &pe_header->start_address,
-     sizeof(pe_header->start_address),
-     1,
-     file_stream
+  mb_file_path = ConvertWideToMultibyte(
+      NULL,
+      file_path
   );
 
-  if (num_fread_objects != 1) {
-    ExitOnGeneralFailure(
-        L"Number of fread objects does not match.",
-        L"Error"
-    );
-  }
+  loaded_image = ImageLoad(mb_file_path, NULL);
 
-  /* Seek to the start address to extract info from the PE file. */
-  is_fseek_fail = fseek(
-      file_stream,
-      ((const long) pe_header->start_address) + ENTRY_POINT_ADDRESS_OFFSET,
-      SEEK_SET
+  memcpy(
+      &pe_header->nt_headers,
+      loaded_image->FileHeader,
+      sizeof(pe_header->nt_headers)
   );
 
-  if (is_fseek_fail) {
-    ExitOnGeneralFailure(
-        L"Cannot seek to the file's target offset.",
-        L"Error"
-    );
-  }
+unload_image:
+  ImageUnload(loaded_image);
 
-  /* Read the entry point address. */
-  num_fread_objects = fread(
-     &pe_header->entry_point_address,
-     sizeof(pe_header->entry_point_address),
-     1,
-     file_stream
-  );
-
-  if (num_fread_objects != 1) {
-    ExitOnGeneralFailure(
-        L"Number of fread objects does not match.",
-        L"Error"
-    );
-  }
-
-  /* Read the code base address. */
-  num_fread_objects = fread(
-     &pe_header->code_base_address,
-     sizeof(pe_header->code_base_address),
-     1,
-     file_stream
-  );
-
-  if (num_fread_objects != 1) {
-    ExitOnGeneralFailure(
-        L"Number of fread objects does not match.",
-        L"Error"
-    );
-  }
-
-  /* Read the data base address. */
-  num_fread_objects = fread(
-     &pe_header->data_base_address,
-     sizeof(pe_header->data_base_address),
-     1,
-     file_stream
-  );
-
-  if (num_fread_objects != 1) {
-    ExitOnGeneralFailure(
-        L"Number of fread objects does not match.",
-        L"Error"
-    );
-  }
-
-  /* Read the image base address. */
-  num_fread_objects = fread(
-     &pe_header->image_base_address,
-     sizeof(pe_header->image_base_address),
-     1,
-     file_stream
-  );
-
-  if (num_fread_objects != 1) {
-    ExitOnGeneralFailure(
-        L"Number of fread objects does not match.",
-        L"Error"
-    );
-  }
-
-free_file_path_mb:
-  free(file_path_mb);
+free_mb_file_path:
+  free(mb_file_path);
 
   return pe_header;
 }
 
 void PeHeader_Deinit(struct PeHeader* pe_header) {
   pe_header->file_path_len = 0;
-  pe_header->start_address = NULL;
-  pe_header->entry_point_address = NULL;
-  pe_header->code_base_address = NULL;
-  pe_header->data_base_address = NULL;
-  pe_header->image_base_address = NULL;
 
   free(pe_header->file_path);
-
   pe_header->file_path = NULL;
 }
 
 void* PeHeader_GetHardDataAddress(
     const struct PeHeader* pe_header
 ) {
-  return (unsigned char*) pe_header->image_base_address
-      + (size_t) pe_header->data_base_address;
+  return (unsigned char*) pe_header->nt_headers.OptionalHeader.ImageBase
+      + pe_header->nt_headers.OptionalHeader.BaseOfData;
 }
 
 void* PeHeader_GetHardEntryPointAddress(
     const struct PeHeader* pe_header
 ) {
-  return (unsigned char*) pe_header->image_base_address
-      + (size_t) pe_header->entry_point_address;
+  return (unsigned char*) pe_header->nt_headers.OptionalHeader.ImageBase
+      + pe_header->nt_headers.OptionalHeader.AddressOfEntryPoint;
 }

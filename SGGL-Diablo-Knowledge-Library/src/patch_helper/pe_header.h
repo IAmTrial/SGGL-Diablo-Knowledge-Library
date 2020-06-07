@@ -32,17 +32,14 @@
 
 #include <stddef.h>
 #include <wchar.h>
+#include <windows.h>
+#include <imagehlp.h>  /* This has to appear after windows.h */
 
 struct PeHeader {
   wchar_t* file_path;
   size_t file_path_len;
 
-  void* start_address;
-
-  void* entry_point_address;
-  void* code_base_address;
-  void* data_base_address;
-  void* image_base_address;
+  IMAGE_NT_HEADERS nt_headers;
 };
 
 struct PeHeader* PeHeader_Init(
