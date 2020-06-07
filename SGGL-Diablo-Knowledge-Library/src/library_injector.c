@@ -117,7 +117,7 @@ static int InjectLibrariesToProcess(
   DWORD resume_thread_result;
   BOOL is_read_process_memory_success;
   BOOL is_write_process_memory_success;
-  size_t num_bytes_read_write_process_memory;
+  SIZE_T num_bytes_read_write_process_memory;
   BOOL is_virtual_protect_ex_success;
 
   entry_point_address = PeHeader_GetHardEntryPointAddress(
@@ -195,7 +195,7 @@ static int InjectLibrariesToProcess(
     );
 
     if (!is_read_process_memory_success) {
-      printf("Read: %u \n", num_bytes_read_write_process_memory);
+      printf("Read: %zu \n", num_bytes_read_write_process_memory);
 
       ExitOnWindowsFunctionFailureWithLastError(
           L"ReadProcessMemory",

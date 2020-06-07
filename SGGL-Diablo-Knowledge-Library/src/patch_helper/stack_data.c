@@ -47,7 +47,7 @@ void StackData_ReadFromProcess(
     const void* stack_data_address
 ) {
   BOOL is_read_process_memory_success;
-  size_t num_bytes_read;
+  SIZE_T num_bytes_read;
 
   is_read_process_memory_success = ReadProcessMemory(
       process_info->hProcess,
@@ -73,7 +73,7 @@ void StackData_WriteToProcess(
     void* stack_data_address
 ) {
   BOOL is_write_process_memory_success;
-  size_t num_bytes_written;
+  SIZE_T num_bytes_written;
 
   is_write_process_memory_success = WriteProcessMemory(
       process_info->hProcess,
