@@ -54,7 +54,7 @@ void ExitOnGeneralFailure(
 #ifndef NDEBUG
   wchar_t full_message[ERROR_MESSAGE_LENGTH];
 
-  swprintf(
+  _snwprintf(
       full_message,
       sizeof(full_message) / sizeof(full_message[0]),
       kGeneralFailErrorFormat,
@@ -87,7 +87,7 @@ void ExitOnWindowsFunctionFailureWithLastError(
   wchar_t full_message[ERROR_MESSAGE_LENGTH];
   wchar_t message_box_caption[ERROR_CAPTION_LENGTH];
 
-  swprintf(
+  _snwprintf(
       full_message,
       sizeof(full_message) / sizeof(full_message[0]),
       kFunctionFailErrorFormat,
@@ -95,7 +95,7 @@ void ExitOnWindowsFunctionFailureWithLastError(
       last_error
   );
 
-  swprintf(
+  _snwprintf(
       message_box_caption,
       sizeof(message_box_caption) / sizeof(message_box_caption[0]),
       L"%ls Failed",

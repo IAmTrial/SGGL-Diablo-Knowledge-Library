@@ -130,6 +130,7 @@ wchar_t* ExtractFileStringValue(
   UINT file_string_value_size;
 
   wchar_t* file_string_sub_block;
+  size_t file_string_sub_block_len;
   size_t file_string_sub_block_capacity;
 
   int swprintf_result;
@@ -184,25 +185,32 @@ wchar_t* ExtractFileStringValue(
   }
 
   /* Format text into the file string sub block. */
-  file_string_sub_block_capacity = string_name_len + 8;
-  file_string_sub_block = NULL;
+  file_string_sub_block_len = _snwprintf(
+      NULL,
+      0,
+      L"\\StringFileInfo\\%04x%04x\\%ls",
+      lang_buffer[0].wLanguage,
+      lang_buffer[0].wCodePage,
+      string_name
+  );
 
-  do {
-    file_string_sub_block_capacity *= 2;
-    file_string_sub_block = realloc(
-        file_string_sub_block,
-        file_string_sub_block_capacity * sizeof(file_string_sub_block[0])
-    );
+  file_string_sub_block_capacity =
+      (file_string_sub_block_len + 1) * sizeof(file_string_sub_block[0]);
 
-    swprintf_result = swprintf(
-        file_string_sub_block,
-        file_string_sub_block_capacity,
-        L"\\StringFileInfo\\%04x%04x\\%ls",
-        lang_buffer[0].wLanguage,
-        lang_buffer[0].wCodePage,
-        string_name
-    );
-  } while (swprintf_result == -1);
+  file_string_sub_block = malloc(file_string_sub_block_capacity);
+
+  if (file_string_sub_block == NULL) {
+    ExitOnAllocationFailure();
+  }
+
+  _snwprintf(
+      file_string_sub_block,
+      file_string_sub_block_len + 1,
+      L"\\StringFileInfo\\%04x%04x\\%ls",
+      lang_buffer[0].wLanguage,
+      lang_buffer[0].wCodePage,
+      string_name
+  );
 
   /* Query the file string value. */
   is_ver_query_value_success = VerQueryValueW(
