@@ -86,7 +86,7 @@ enum GameVersion GameVersion_DetermineRunningGameVersion(
           sizeof(find_version_func_table)
               / sizeof(find_version_func_table[0]),
           sizeof(find_version_func_table[0]),
-          &ProductNameAndFindGameVersionFunctionEntry_CompareKey
+          &ProductNameAndFindGameVersionFunctionEntry_CompareAsVoidKey
       );
 
   if (search_result == NULL) {

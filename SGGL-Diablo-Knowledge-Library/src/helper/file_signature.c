@@ -64,6 +64,16 @@ int FileSignature_CompareAll(
   return signature_diff;
 }
 
+int FileSignature_CompareAsVoidAll(
+    const void* signature1,
+    const void* signature2
+) {
+  return FileSignature_CompareAll(
+      (const struct FileSignature*) signature1,
+      (const struct FileSignature*) signature2
+  );
+}
+
 int GameVersionSignature_CompareSignature(
     const struct GameVersionSignature* entry1,
     const struct GameVersionSignature* entry2
@@ -74,9 +84,29 @@ int GameVersionSignature_CompareSignature(
   );
 }
 
+int GameVersionSignature_CompareAsVoidSignature(
+    const void* entry1,
+    const void* entry2
+) {
+  return GameVersionSignature_CompareSignature(
+      (const struct GameVersionSignature*) entry1,
+      (const struct GameVersionSignature*) entry2
+  );
+}
+
 int GuessCorrectionSignature_CompareGuess(
     const struct GuessCorrectionSignature* entry1,
     const struct GuessCorrectionSignature* entry2
 ) {
   return entry1->guessed_version - entry2->guessed_version;
+}
+
+int GuessCorrectionSignature_CompareAsVoidGuess(
+    const void* entry1,
+    const void* entry2
+) {
+  return GuessCorrectionSignature_CompareGuess(
+      (const struct GuessCorrectionSignature*) entry1,
+      (const struct GuessCorrectionSignature*) entry2
+  );
 }

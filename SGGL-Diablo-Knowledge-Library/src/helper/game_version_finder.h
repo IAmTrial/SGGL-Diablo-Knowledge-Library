@@ -48,4 +48,9 @@ int ProductNameAndFindGameVersionFunctionEntry_CompareKey(
     const struct ProductNameAndFindGameVersionFunctionEntry* entry2
 );
 
+int ProductNameAndFindGameVersionFunctionEntry_CompareAsVoidKey(
+    const void* entry1,
+    const void* entry2
+);
+
 #endif /* SGGLDKL_HELPER_GAME_VERSION_FINDER_H_ */

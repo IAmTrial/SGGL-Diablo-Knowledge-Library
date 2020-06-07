@@ -67,7 +67,7 @@ static enum GameVersion SearchGameVersionTable(
       sizeof(kHellfireProductVersionsToGameVersion)
           / sizeof(kHellfireProductVersionsToGameVersion[0]),
       sizeof(kHellfireProductVersionsToGameVersion[0]),
-      &ShortVersionStringAndGameVersionEntry_CompareKey
+      &ShortVersionStringAndGameVersionEntry_CompareAsVoidKey
   );
 
   if (search_result != NULL) {

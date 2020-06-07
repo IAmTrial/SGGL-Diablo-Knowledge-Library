@@ -58,11 +58,31 @@ int ShortVersion_CompareAll(
   return 0;
 }
 
+int ShortVersion_CompareAsVoidAll(
+    const void* version1,
+    const void* version2
+) {
+  return ShortVersion_CompareAll(
+      (const struct ShortVersion*) version1,
+      (const struct ShortVersion*) version2
+  );
+}
+
 int ShortVersionString_CompareAll(
     const struct ShortVersionString* version_str1,
     const struct ShortVersionString* version_str2
 ) {
   return wcscmp(version_str1->version_str, version_str2->version_str);
+}
+
+int ShortVersionString_CompareAsVoidAll(
+    void* version_str1,
+    void* version_str2
+) {
+  return ShortVersionString_CompareAll(
+      (const struct ShortVersionString*) version_str1,
+      (const struct ShortVersionString*) version_str2
+  );
 }
 
 int ShortVersionAndGameVersionEntry_CompareKey(
@@ -75,6 +95,16 @@ int ShortVersionAndGameVersionEntry_CompareKey(
   );
 }
 
+int ShortVersionAndGameVersionEntry_CompareAsVoidKey(
+    const void* entry1,
+    const void* entry2
+) {
+  return ShortVersionAndGameVersionEntry_CompareKey(
+      (const struct ShortVersionAndGameVersionEntry*) entry1,
+      (const struct ShortVersionAndGameVersionEntry*) entry2
+  );
+}
+
 int ShortVersionStringAndGameVersionEntry_CompareKey(
     const struct ShortVersionStringAndGameVersionEntry* entry1,
     const struct ShortVersionStringAndGameVersionEntry* entry2
@@ -82,5 +112,15 @@ int ShortVersionStringAndGameVersionEntry_CompareKey(
   return ShortVersionString_CompareAll(
       &entry1->short_version_str,
       &entry2->short_version_str
+  );
+}
+
+int ShortVersionStringAndGameVersionEntry_CompareAsVoidKey(
+    const void* entry1,
+    const void* entry2
+) {
+  return ShortVersionStringAndGameVersionEntry_CompareKey(
+      (const struct ShortVersionStringAndGameVersionEntry*) entry1,
+      (const struct ShortVersionStringAndGameVersionEntry*) entry2
   );
 }

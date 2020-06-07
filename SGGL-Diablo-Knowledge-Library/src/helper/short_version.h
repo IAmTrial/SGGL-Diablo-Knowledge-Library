@@ -61,9 +61,19 @@ int ShortVersion_CompareAll(
     const struct ShortVersion* version2
 );
 
+int ShortVersion_CompareAsVoidAll(
+    const void* version1,
+    const void* version2
+);
+
 int ShortVersionString_CompareAll(
     const struct ShortVersionString* version_str1,
     const struct ShortVersionString* version_str2
+);
+
+int ShortVersionString_CompareAsVoidAll(
+    void* version_str1,
+    void* version_str2
 );
 
 int ShortVersionAndGameVersionEntry_CompareKey(
@@ -71,9 +81,19 @@ int ShortVersionAndGameVersionEntry_CompareKey(
     const struct ShortVersionAndGameVersionEntry* entry2
 );
 
+int ShortVersionAndGameVersionEntry_CompareAsVoidKey(
+    const void* entry1,
+    const void* entry2
+);
+
 int ShortVersionStringAndGameVersionEntry_CompareKey(
     const struct ShortVersionStringAndGameVersionEntry* entry1,
     const struct ShortVersionStringAndGameVersionEntry* entry2
+);
+
+int ShortVersionStringAndGameVersionEntry_CompareAsVoidKey(
+    const void* entry1,
+    const void* entry2
 );
 
 #endif /* SGGLDKL_HELPER_SHORT_VERSION_H_ */

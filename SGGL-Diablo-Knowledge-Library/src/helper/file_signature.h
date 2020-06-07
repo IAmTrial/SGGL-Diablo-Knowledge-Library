@@ -55,14 +55,29 @@ int FileSignature_CompareAll(
     const struct FileSignature* signature2
 );
 
+int FileSignature_CompareAsVoidAll(
+    const void* signature1,
+    const void* signature2
+);
+
 int GameVersionSignature_CompareSignature(
     const struct GameVersionSignature* entry1,
     const struct GameVersionSignature* entry2
 );
 
+int GameVersionSignature_CompareAsVoidSignature(
+    const void* entry1,
+    const void* entry2
+);
+
 int GuessCorrectionSignature_CompareGuess(
     const struct GuessCorrectionSignature* entry1,
     const struct GuessCorrectionSignature* entry2
+);
+
+int GuessCorrectionSignature_CompareAsVoidGuess(
+    const void* entry1,
+    const void* entry2
 );
 
 #endif /* SGGLDKL_HELPER_FILE_SIGNATURE_H_ */

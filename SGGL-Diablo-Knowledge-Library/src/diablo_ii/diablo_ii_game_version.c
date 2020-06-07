@@ -229,7 +229,7 @@ static enum GameVersion DetermineGameVersionByData(
       kGuessCorrectionTable,
       sizeof(kGuessCorrectionTable) / sizeof(kGuessCorrectionTable[0]),
       sizeof(kGuessCorrectionTable[0]),
-      &GuessCorrectionSignature_CompareGuess
+      &GuessCorrectionSignature_CompareAsVoidGuess
   );
 
   /* It's not found, so the initial guess was likely correct. */
@@ -406,7 +406,7 @@ static enum GameVersion Determine1001GameVersionByData(
       sizeof(k1001GameVersionSignatureTable)
           / sizeof(k1001GameVersionSignatureTable[0]),
       sizeof(k1001GameVersionSignatureTable[0]),
-      &GameVersionSignature_CompareSignature
+      &GameVersionSignature_CompareAsVoidSignature
   );
 
   if (search_result == NULL) {
@@ -442,7 +442,7 @@ static enum GameVersion SearchGameFileInfoTable(
       sizeof(kGameFileVersionsToGameVersion)
           / sizeof(kGameFileVersionsToGameVersion[0]),
       sizeof(kGameFileVersionsToGameVersion[0]),
-      &ShortVersionAndGameVersionEntry_CompareKey
+      &ShortVersionAndGameVersionEntry_CompareAsVoidKey
   );
 
   if (search_result == NULL) {

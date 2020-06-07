@@ -35,3 +35,13 @@ int ProductNameAndFindGameVersionFunctionEntry_CompareKey(
 ) {
   return wcscmp(entry1->product_name, entry2->product_name);
 }
+
+int ProductNameAndFindGameVersionFunctionEntry_CompareAsVoidKey(
+    const void* entry1,
+    const void* entry2
+) {
+  return ProductNameAndFindGameVersionFunctionEntry_CompareKey(
+      (const struct ProductNameAndFindGameVersionFunctionEntry*) entry1,
+      (const struct ProductNameAndFindGameVersionFunctionEntry*) entry2
+  );
+}

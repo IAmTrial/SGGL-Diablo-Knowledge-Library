@@ -104,7 +104,7 @@ static enum GameVersion SearchGameVersionTable(
       sizeof(kDiabloProductVersionsToGameVersion)
           / sizeof(kDiabloProductVersionsToGameVersion[0]),
       sizeof(kDiabloProductVersionsToGameVersion[0]),
-      &ShortVersionAndGameVersionEntry_CompareKey
+      &ShortVersionAndGameVersionEntry_CompareAsVoidKey
   );
 
   if (search_result != NULL) {
@@ -118,7 +118,7 @@ static enum GameVersion SearchGameVersionTable(
       sizeof(kStormFileVersionsToGameVersion)
           / sizeof(kStormFileVersionsToGameVersion[0]),
       sizeof(kStormFileVersionsToGameVersion[0]),
-      &ShortVersionAndGameVersionEntry_CompareKey
+      &ShortVersionAndGameVersionEntry_CompareAsVoidKey
   );
 
   if (search_result != NULL) {
