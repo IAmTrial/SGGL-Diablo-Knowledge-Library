@@ -133,8 +133,6 @@ wchar_t* ExtractFileStringValue(
   size_t file_string_sub_block_len;
   size_t file_string_sub_block_capacity;
 
-  int swprintf_result;
-
   /* Check version size. */
   file_version_info_size = GetFileVersionInfoSizeW(
       game_path,
