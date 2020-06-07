@@ -31,7 +31,6 @@
 
 #include <stdio.h>
 
-#include "../game_version.h"
 #include "cleanup_patch.h"
 #include "entry_hijack_patch.h"
 #include "game_address.h"

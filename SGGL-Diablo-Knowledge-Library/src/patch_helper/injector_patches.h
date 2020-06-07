@@ -32,6 +32,7 @@
 
 #include <windows.h>
 
+#include "../game_version.h"
 #include "buffer_patch.h"
 #include "pe_header.h"
 
