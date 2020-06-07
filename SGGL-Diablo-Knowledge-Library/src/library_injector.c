@@ -42,8 +42,6 @@
 #include "patch_helper/pe_header.h"
 #include "patch_helper/stack_data.h"
 
-static struct PeHeader pe_header;
-
 static void WaitForProcessSuspend(const PROCESS_INFORMATION* process_info) {
   DWORD suspend_thread_result;
   DWORD resume_thread_result;
@@ -91,6 +89,7 @@ static void WaitForProcessSuspend(const PROCESS_INFORMATION* process_info) {
 }
 
 static int InjectLibrariesToProcess(
+    struct LibraryInjector* library_injector,
     const PROCESS_INFORMATION* process_info,
     size_t num_libraries,
     const wchar_t** libraries_to_inject,
@@ -122,7 +121,9 @@ static int InjectLibrariesToProcess(
   size_t num_bytes_read_write_process_memory;
   BOOL is_virtual_protect_ex_success;
 
-  entry_point_address = PeHeader_GetHardEntryPointAddress(&pe_header);
+  entry_point_address = PeHeader_GetHardEntryPointAddress(
+      &library_injector->pe_header
+  );
 
   /*
   * Change the access protection of the entry point to enable write
@@ -154,7 +155,7 @@ static int InjectLibrariesToProcess(
 
   InjectorPatches_Init(
       &injector_patches,
-      &pe_header,
+      &library_injector->pe_header,
       process_info
   );
 
@@ -447,15 +448,32 @@ free_library_to_inject_mb:
   return 1;
 }
 
-void InitLibraryInjector(const wchar_t* game_path, size_t game_path_len) {
-  PeHeader_Init(&pe_header, game_path, game_path_len);
+void LibraryInjector_Init(
+    struct LibraryInjector* library_injector,
+    const wchar_t* game_path,
+    size_t game_path_len
+) {
+  library_injector->game_path_len = 0;
+
+  library_injector->game_path = malloc(
+      game_path_len * sizeof(library_injector->game_path[0])
+  );
+
+  if (library_injector->game_path == NULL) {
+    ExitOnAllocationFailure();
+  }
+
+  PeHeader_Init(&library_injector->pe_header, game_path, game_path_len);
 }
 
-void DeinitLibraryInjector(void) {
-  PeHeader_Deinit(&pe_header);
+void LibraryInjector_Deinit(struct LibraryInjector* library_injector) {
+  library_injector->game_path_len = 0;
+  free(library_injector->game_path);
+  PeHeader_Deinit(&library_injector->pe_header);
 }
 
-int InjectLibraries(
+int LibraryInjector_InjectLibrariesToProcesses(
+    struct LibraryInjector* library_injector,
     const wchar_t** libraries_to_inject,
     size_t num_libraries,
     const PROCESS_INFORMATION* processes_infos,
@@ -491,6 +509,7 @@ int InjectLibraries(
 
   for (i_process = 0; i_process < num_instances; i_process += 1) {
     is_current_success = InjectLibrariesToProcess(
+        library_injector,
         &processes_infos[i_process],
         num_libraries,
         libraries_to_inject,

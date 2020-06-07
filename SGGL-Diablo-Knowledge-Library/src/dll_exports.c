@@ -33,12 +33,14 @@
 #include "game_version_printer.h"
 #include "library_injector.h"
 
+static struct LibraryInjector library_injector;
+
 void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
 ) {
   InitGameVersion(game_path, game_path_len);
-  InitLibraryInjector(game_path, game_path_len);
+  LibraryInjector_Init(&library_injector, game_path, game_path_len);
 }
 
 void Knowledge_Deinit(
@@ -46,7 +48,7 @@ void Knowledge_Deinit(
     size_t num_instances
 ) {
   DeinitGameVersion();
-  DeinitLibraryInjector();
+  LibraryInjector_Deinit(&library_injector);
 }
 
 void Knowledge_PrintGameInfo(void) {
@@ -59,7 +61,8 @@ int Knowledge_InjectLibrariesToProcesses(
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
 ) {
-  return InjectLibraries(
+  return LibraryInjector_InjectLibrariesToProcesses(
+      &library_injector,
       libraries_to_inject,
       num_libraries,
       processes_infos,

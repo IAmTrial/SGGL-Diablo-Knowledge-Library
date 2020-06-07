@@ -34,10 +34,25 @@
 #include <wchar.h>
 #include <windows.h>
 
-void InitLibraryInjector(const wchar_t* game_path, size_t game_path_len);
-void DeinitLibraryInjector(void);
+#include "patch_helper/pe_header.h"
 
-int InjectLibraries(
+struct LibraryInjector {
+  size_t game_path_len;
+  wchar_t* game_path;
+
+  struct PeHeader pe_header;
+};
+
+void LibraryInjector_Init(
+    struct LibraryInjector* library_injector,
+    const wchar_t* game_path,
+    size_t game_path_len
+);
+
+void LibraryInjector_Deinit(struct LibraryInjector* library_injector);
+
+int LibraryInjector_InjectLibrariesToProcesses(
+    struct LibraryInjector* library_injector,
     const wchar_t** libraries_to_inject,
     size_t num_libraries,
     const PROCESS_INFORMATION* processes_infos,
