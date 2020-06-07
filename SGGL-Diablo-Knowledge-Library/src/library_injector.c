@@ -32,7 +32,6 @@
 #include <stdio.h>
 
 #include "game_version.h"
-#include "game_version_enum.h"
 #include "helper/encoding.h"
 #include "helper/error_handling.h"
 #include "patch_helper/buffer_patch.h"
@@ -156,7 +155,8 @@ static int InjectLibrariesToProcess(
   InjectorPatches_Init(
       &injector_patches,
       &library_injector->pe_header,
-      process_info
+      process_info,
+      library_injector->game_version
   );
 
   /* Patch the entry function and add the payload to the game. */
@@ -233,7 +233,7 @@ static int InjectLibrariesToProcess(
 
   /*
   * End spinlock, which will resume execution. This needs to happen
-  * the stack data initialization after due to partial write race
+  * after the stack data initialization due to partial write race
   * condition.
   */
   stack_data_copy.is_ready_to_execute = 1;
@@ -451,7 +451,8 @@ free_library_to_inject_mb:
 void LibraryInjector_Init(
     struct LibraryInjector* library_injector,
     const wchar_t* game_path,
-    size_t game_path_len
+    size_t game_path_len,
+    enum GameVersion game_version
 ) {
   library_injector->game_path_len = 0;
 
@@ -462,6 +463,8 @@ void LibraryInjector_Init(
   if (library_injector->game_path == NULL) {
     ExitOnAllocationFailure();
   }
+
+  library_injector->game_version = game_version;
 
   PeHeader_Init(&library_injector->pe_header, game_path, game_path_len);
 }
@@ -481,8 +484,6 @@ int LibraryInjector_InjectLibrariesToProcesses(
 ) {
   size_t i_library;
   size_t i_process;
-
-  enum GameVersion running_game_version = GetRunningGameVersion();
 
   size_t* libraries_to_inject_lens;
 

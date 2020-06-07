@@ -44,7 +44,8 @@ struct InjectorPatches {
 struct InjectorPatches* InjectorPatches_Init(
     struct InjectorPatches* injector_patches,
     const struct PeHeader* pe_header,
-    const PROCESS_INFORMATION* process_info
+    const PROCESS_INFORMATION* process_info,
+    enum GameVersion game_version
 );
 
 void InjectorPatches_Deinit(struct InjectorPatches* injector_patches);

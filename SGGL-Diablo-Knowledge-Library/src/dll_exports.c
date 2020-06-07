@@ -33,26 +33,35 @@
 #include "game_version_printer.h"
 #include "library_injector.h"
 
+static enum GameVersion running_game_version;
 static struct LibraryInjector library_injector;
 
 void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
 ) {
-  InitGameVersion(game_path, game_path_len);
-  LibraryInjector_Init(&library_injector, game_path, game_path_len);
+  running_game_version = GameVersion_DetermineRunningGameVersion(
+      game_path,
+      game_path_len
+  );
+
+  LibraryInjector_Init(
+      &library_injector,
+      game_path,
+      game_path_len,
+      running_game_version
+  );
 }
 
 void Knowledge_Deinit(
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
 ) {
-  DeinitGameVersion();
   LibraryInjector_Deinit(&library_injector);
 }
 
 void Knowledge_PrintGameInfo(void) {
-  PrintGameVersion();
+  PrintGameVersion(running_game_version);
 }
 
 int Knowledge_InjectLibrariesToProcesses(

@@ -33,7 +33,7 @@
 #include <wchar.h>
 #include <windows.h>
 
-#include "../game_version_enum.h"
+#include "../game_version.h"
 
 enum GameVersion Diablo_II_FindGameVersion(
     const wchar_t* game_file_path,

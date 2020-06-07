@@ -30,6 +30,6 @@
 #ifndef SGGLDKL_GAME_VERSION_PRINTER_H_
 #define SGGLDKL_GAME_VERSION_PRINTER_H_
 
-void PrintGameVersion(void);
+void PrintGameVersion(enum GameVersion game_version);
 
 #endif /* SGGLDKL_GAME_VERSION_PRINTER_H_ */

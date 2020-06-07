@@ -54,9 +54,12 @@ find_version_func_table[] = {
     { L"Synergistic Software Hellfire", &Hellfire_FindGameVersion }
 };
 
-static enum GameVersion running_game_version = VERSION_UNKNOWN;
+enum GameVersion GameVersion_DetermineRunningGameVersion(
+    const wchar_t* game_path,
+    size_t game_path_len
+) {
+  enum GameVersion running_game_version;
 
-void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
   const wchar_t* kProductNameStr = L"ProductName";
   const size_t kProductNameLen =
       (sizeof(L"ProductName") / sizeof(kProductNameStr[0])) - 1;
@@ -99,12 +102,6 @@ void InitGameVersion(const wchar_t* game_path, size_t game_path_len) {
 
 free_running_product_name:
   free(running_product_name);
-}
 
-void DeinitGameVersion(void) {
-  running_game_version = 0;
-}
-
-enum GameVersion GetRunningGameVersion(void) {
   return running_game_version;
 }

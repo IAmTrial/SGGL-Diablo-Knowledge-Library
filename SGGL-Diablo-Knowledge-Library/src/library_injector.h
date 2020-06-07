@@ -34,11 +34,14 @@
 #include <wchar.h>
 #include <windows.h>
 
+#include "game_version.h"
 #include "patch_helper/pe_header.h"
 
 struct LibraryInjector {
   size_t game_path_len;
   wchar_t* game_path;
+
+  enum GameVersion game_version;
 
   struct PeHeader pe_header;
 };
@@ -46,7 +49,8 @@ struct LibraryInjector {
 void LibraryInjector_Init(
     struct LibraryInjector* library_injector,
     const wchar_t* game_path,
-    size_t game_path_len
+    size_t game_path_len,
+    enum GameVersion game_version
 );
 
 void LibraryInjector_Deinit(struct LibraryInjector* library_injector);

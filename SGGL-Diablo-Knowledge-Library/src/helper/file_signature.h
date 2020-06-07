@@ -32,7 +32,7 @@
 
 #include <wchar.h>
 
-#include "../game_version_enum.h"
+#include "../game_version.h"
 
 struct FileSignature {
   const wchar_t* file_path;

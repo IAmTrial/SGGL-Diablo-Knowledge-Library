@@ -41,7 +41,8 @@
 struct InjectorPatches* InjectorPatches_Init(
     struct InjectorPatches* injector_patches,
     const struct PeHeader* pe_header,
-    const PROCESS_INFORMATION* process_info
+    const PROCESS_INFORMATION* process_info,
+    enum GameVersion game_version
 ) {
   void* (*cleanup_patch_address)(void);
 
@@ -58,7 +59,7 @@ struct InjectorPatches* InjectorPatches_Init(
 
   entry_hijack_patch_address = GetEntryHijackPatchAddress(
       pe_header,
-      GetRunningGameVersion()
+      game_version
   );
 
 #if !NDEBUG

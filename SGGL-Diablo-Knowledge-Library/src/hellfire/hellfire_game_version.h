@@ -33,7 +33,7 @@
 #include <stddef.h>
 #include <wchar.h>
 
-#include "../game_version_enum.h"
+#include "../game_version.h"
 
 enum GameVersion Hellfire_FindGameVersion(
     const wchar_t* hellfire_file_path,

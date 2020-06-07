@@ -33,7 +33,6 @@
 
 #include "helper/error_handling.h"
 #include "game_version.h"
-#include "game_version_enum.h"
 
 static const char* GetGameName(enum GameVersion game_version) {
   if (game_version >= DIABLO_1_00 && game_version <= DIABLO_1_09B) {
@@ -240,16 +239,12 @@ static const char* GetVersionText(enum GameVersion game_version) {
   }
 }
 
-void PrintGameVersion(void) {
-  enum GameVersion running_game_version;
-
+void PrintGameVersion(enum GameVersion game_version) {
   const char* game_name;
   const char* game_version_text;
 
-  running_game_version = GetRunningGameVersion();
-
-  game_name = GetGameName(running_game_version);
-  game_version_text = GetVersionText(running_game_version);
+  game_name = GetGameName(game_version);
+  game_version_text = GetVersionText(game_version);
 
   printf("Game information: \n");
   printf("%s %s \n\n", game_name, game_version_text);

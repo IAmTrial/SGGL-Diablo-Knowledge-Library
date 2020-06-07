@@ -30,7 +30,7 @@
 #ifndef SGGLDKL_PATCH_HELPER_GAME_ADDRESS_H_
 #define SGGLDKL_PATCH_HELPER_GAME_ADDRESS_H_
 
-#include "../game_version_enum.h"
+#include "../game_version.h"
 #include "pe_header.h"
 
 void* GetEntryHijackPatchAddress(

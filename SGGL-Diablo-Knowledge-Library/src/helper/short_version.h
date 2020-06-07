@@ -33,7 +33,7 @@
 #include <wchar.h>
 #include <windows.h>
 
-#include "../game_version_enum.h"
+#include "../game_version.h"
 
 struct ShortVersion {
   DWORD major_left;

@@ -33,11 +33,29 @@
 #include <stddef.h>
 #include <wchar.h>
 
-#include "game_version_enum.h"
+enum GameVersion {
+  VERSION_UNKNOWN = -1,
 
-void InitGameVersion(const wchar_t* game_path, size_t game_path_len);
-void DeinitGameVersion(void);
+  DIABLO_1_00 = 1, DIABLO_1_02, DIABLO_1_03, DIABLO_1_04, DIABLO_1_05,
+  DIABLO_1_07, DIABLO_1_08, DIABLO_1_09, DIABLO_1_09B,
 
-enum GameVersion GetRunningGameVersion(void);
+  HELLFIRE_1_00, HELLFIRE_1_01,
+
+  DIABLO_II_BETA_1_02, DIABLO_II_STRESS_TEST_BETA_1_02,
+  DIABLO_II_1_00, DIABLO_II_1_01, DIABLO_II_1_02, DIABLO_II_1_03,
+  DIABLO_II_1_04, DIABLO_II_1_04B, DIABLO_II_1_04C, DIABLO_II_1_05,
+  DIABLO_II_1_05B, DIABLO_II_1_06, DIABLO_II_1_06B,
+
+  DIABLO_II_1_07_BETA, DIABLO_II_1_07, DIABLO_II_1_08, DIABLO_II_1_09,
+  DIABLO_II_1_09B, DIABLO_II_1_09C, DIABLO_II_1_09D, DIABLO_II_1_10_BETA,
+  DIABLO_II_1_10S_BETA, DIABLO_II_1_10, DIABLO_II_1_11, DIABLO_II_1_11B,
+  DIABLO_II_1_12A, DIABLO_II_1_13A_PTR, DIABLO_II_1_13C, DIABLO_II_1_13D,
+  DIABLO_II_1_14A, DIABLO_II_1_14B, DIABLO_II_1_14C, DIABLO_II_1_14D
+};
+
+enum GameVersion GameVersion_DetermineRunningGameVersion(
+    const wchar_t* game_path,
+    size_t game_path_len
+);
 
 #endif /* SGGLDKL_GAME_VERSION_H_ */
