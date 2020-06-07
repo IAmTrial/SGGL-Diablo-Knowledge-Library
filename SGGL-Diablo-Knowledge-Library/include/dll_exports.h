@@ -36,6 +36,10 @@
 
 #include "dllexport_define.inc"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 DLLEXPORT void Knowledge_Init(
     const wchar_t* game_path,
     size_t game_path_len
@@ -54,6 +58,10 @@ DLLEXPORT int Knowledge_InjectLibrariesToProcesses(
     const PROCESS_INFORMATION* processes_infos,
     size_t num_instances
 );
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif /* __cplusplus */
 
 #include "dllexport_undefine.inc"
 #endif /* SGGLKL_DLL_EXPORTS_H_ */
