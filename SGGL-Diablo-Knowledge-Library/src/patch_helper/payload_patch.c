@@ -39,8 +39,8 @@ static const unsigned char kFuncEnd[] = {
 
 __declspec(naked) static void __stdcall PayloadFunc(void** top_of_stack) {
   /* Function prologue */
-  ASM_X86(pushad);
-  ASM_X86(mov ebp, esp);
+  ASM_X86_01(pushad);
+  ASM_X86_02(mov ebp, esp);
 
   /*
   * Stack:
@@ -63,107 +63,107 @@ __declspec(naked) static void __stdcall PayloadFunc(void** top_of_stack) {
   * -88 to -128: reserved, for kernel functions
   * -132 to -192: reserved, for local jump offsets
   */
-  ASM_X86(sub esp, 192);
+  ASM_X86_02(sub esp, 192);
 
   /*
   * This must occur before the *top_of_stack is init to prevent
   * infinite loop race condition!
   */
-  ASM_X86(mov dword ptr [ebp - 24], 0);
+  ASM_X86_02(mov dword ptr [ebp - 24], 0);
 
   /* *top_of_stack = esp; */
-  ASM_X86(mov esi, dword ptr [ebp + 36]);
-  ASM_X86(mov dword ptr [esi], esp);
+  ASM_X86_02(mov esi, dword ptr [ebp + 36]);
+  ASM_X86_02(mov dword ptr [esi], esp);
 
 ASM_X86_LABEL(SpinlockWaitForInitReady)
-  ASM_X86(cmp dword ptr [ebp - 24], 0);
-  ASM_X86(je SpinlockWaitForInitReady);
+  ASM_X86_02(cmp dword ptr [ebp - 24], 0);
+  ASM_X86_01(je SpinlockWaitForInitReady);
 
   /* is_lib_resize_needed = 1; */
-  ASM_X86(mov dword ptr [ebp - 12], 1);
+  ASM_X86_02(mov dword ptr [ebp - 12], 1);
 
   /* is_ready_to_exit = 0; */
-  ASM_X86(mov dword ptr [ebp - 28], 0);
+  ASM_X86_02(mov dword ptr [ebp - 28], 0);
 
   /* current_thread_handle = GetCurrentThread(); */
-  ASM_X86(call dword ptr [ebp - 80]);
-  ASM_X86(mov dword ptr [ebp - 8], eax);
+  ASM_X86_01(call dword ptr [ebp - 80]);
+  ASM_X86_02(mov dword ptr [ebp - 8], eax);
 
   /* lib_path_size = 32; */
-  ASM_X86(mov dword ptr [ebp - 16], 32);
+  ASM_X86_02(mov dword ptr [ebp - 16], 32);
 
-  ASM_X86(jmp PayloadFunc_AllocPath);
+  ASM_X86_01(jmp PayloadFunc_AllocPath);
 
 ASM_X86_LABEL(PayloadFunc_ReallocPath)
   /* Free lib_path_ptr for reallocation. */
-  ASM_X86(push 0x00000800);             /* MEM_RELEASE */
-  ASM_X86(push 0);
-  ASM_X86(push dword ptr [ebp - 20]);   /* lib_path_ptr */
-  ASM_X86(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
+  ASM_X86_01(push 0x00000800);             /* MEM_RELEASE */
+  ASM_X86_01(push 0);
+  ASM_X86_01(push dword ptr [ebp - 20]);   /* lib_path_ptr */
+  ASM_X86_01(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
 
   /* lib_path_size *= 2; */
-  ASM_X86(shl dword ptr [ebp - 16], 1);
+  ASM_X86_02(shl dword ptr [ebp - 16], 1);
 
   /* Allocate space for the path. */
 ASM_X86_LABEL(PayloadFunc_AllocPath)
-  ASM_X86(push 0x00000004);             /* PAGE_READWRITE */
-  ASM_X86(push 0x00003000);             /* MEM_COMMIT | MEM_RESERVE */
-  ASM_X86(push dword ptr [ebp - 16]);   /* lib_path_size */
-  ASM_X86(push 0);                      /* NULL */
-  ASM_X86(call dword ptr [ebp - 72]);   /* VirtualAlloc(...); */
+  ASM_X86_01(push 0x00000004);             /* PAGE_READWRITE */
+  ASM_X86_01(push 0x00003000);             /* MEM_COMMIT | MEM_RESERVE */
+  ASM_X86_01(push dword ptr [ebp - 16]);   /* lib_path_size */
+  ASM_X86_01(push 0);                      /* NULL */
+  ASM_X86_01(call dword ptr [ebp - 72]);   /* VirtualAlloc(...); */
 
   /* lib_path_ptr = VirtualAlloc(...); */
-  ASM_X86(mov dword ptr [ebp - 20], eax);
+  ASM_X86_02(mov dword ptr [ebp - 20], eax);
 
   /* is_lib_resize_needed = 0; */
-  ASM_X86(mov dword ptr [ebp - 12], 0);
+  ASM_X86_02(mov dword ptr [ebp - 12], 0);
 
   /* Suspend current thread until SGGL wakes it up. */
 ASM_X86_LABEL(PayloadFunc_WaitForNextIteration)
-  ASM_X86(push dword ptr [ebp - 8]);
-  ASM_X86(call dword ptr [ebp - 76]);   /* SuspendThread(...); */
+  ASM_X86_01(push dword ptr [ebp - 8]);
+  ASM_X86_01(call dword ptr [ebp - 76]);   /* SuspendThread(...); */
 
   /* Check if reallocation is needed. */
-  ASM_X86(cmp dword ptr [ebp - 12], 0);
-  ASM_X86(jne PayloadFunc_ReallocPath);
+  ASM_X86_02(cmp dword ptr [ebp - 12], 0);
+  ASM_X86_01(jne PayloadFunc_ReallocPath);
 
   /* Check num_libs and exit if no more libs left. */
-  ASM_X86(cmp dword ptr [ebp - 4], 0);
-  ASM_X86(je PayloadFunc_End);
+  ASM_X86_02(cmp dword ptr [ebp - 4], 0);
+  ASM_X86_01(je PayloadFunc_End);
 
   /* Load library. */
-  ASM_X86(push dword ptr [ebp - 20]);
-  ASM_X86(call dword ptr [ebp - 84]);   /* LoadLibraryA(...); */
+  ASM_X86_01(push dword ptr [ebp - 20]);
+  ASM_X86_01(call dword ptr [ebp - 84]);   /* LoadLibraryA(...); */
 
-  ASM_X86(dec dword ptr [ebp - 4]);
-  ASM_X86(jmp PayloadFunc_WaitForNextIteration);
+  ASM_X86_01(dec dword ptr [ebp - 4]);
+  ASM_X86_01(jmp PayloadFunc_WaitForNextIteration);
 
 ASM_X86_LABEL(PayloadFunc_End)
   /* Free lib_path_ptr. */
-  ASM_X86(push 0x00000800);             /* MEM_RELEASE */
-  ASM_X86(push 0);
-  ASM_X86(push dword ptr [ebp - 20]);   /* lib_path_ptr */
-  ASM_X86(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
+  ASM_X86_01(push 0x00000800);             /* MEM_RELEASE */
+  ASM_X86_01(push 0);
+  ASM_X86_01(push dword ptr [ebp - 20]);   /* lib_path_ptr */
+  ASM_X86_01(call dword ptr [ebp - 68]);   /* VirtualFree(...); */
 
   /*
   * Jump to the cleanup function. These are 5 bytes of dummies to
   * ensure there is space for the 4 byte jump op.
   */
-  ASM_X86(int 3);
-  ASM_X86(int 3);
-  ASM_X86(int 3);
-  ASM_X86(int 3);
-  ASM_X86(int 3);
+  ASM_X86_01(int 3);
+  ASM_X86_01(int 3);
+  ASM_X86_01(int 3);
+  ASM_X86_01(int 3);
+  ASM_X86_01(int 3);
 
   /* Hex for 8 0x90, which is used to detect the end of the function. */
-  ASM_X86(nop);
-  ASM_X86(nop);
-  ASM_X86(nop);
-  ASM_X86(nop);
-  ASM_X86(nop);
-  ASM_X86(nop);
-  ASM_X86(nop);
-  ASM_X86(nop);
+  ASM_X86_01(nop);
+  ASM_X86_01(nop);
+  ASM_X86_01(nop);
+  ASM_X86_01(nop);
+  ASM_X86_01(nop);
+  ASM_X86_01(nop);
+  ASM_X86_01(nop);
+  ASM_X86_01(nop);
 }
 
 static void InitFuncSize(size_t* func_size) {
