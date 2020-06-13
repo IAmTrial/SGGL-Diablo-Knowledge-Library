@@ -115,11 +115,12 @@ wchar_t* ExtractFileStringValue(
 ) {
   DWORD ignored;
 
-  void* file_version_info;
-  DWORD file_version_info_size;
-
   BOOL is_get_file_version_info_success;
   BOOL is_ver_query_value_success;
+  int snwprintf_result;
+
+  void* file_version_info;
+  DWORD file_version_info_size;
 
   struct LANGANDCODEPAGE* lang_buffer;
   UINT lang_buffer_size;
@@ -130,7 +131,6 @@ wchar_t* ExtractFileStringValue(
   UINT file_string_value_size;
 
   wchar_t* file_string_sub_block;
-  size_t file_string_sub_block_len;
   size_t file_string_sub_block_capacity;
 
   /* Check version size. */
@@ -183,32 +183,33 @@ wchar_t* ExtractFileStringValue(
   }
 
   /* Format text into the file string sub block. */
-  file_string_sub_block_len = _snwprintf(
-      NULL,
-      0,
-      L"\\StringFileInfo\\%04x%04x\\%ls",
-      lang_buffer[0].wLanguage,
-      lang_buffer[0].wCodePage,
-      string_name
-  );
+  file_string_sub_block_capacity = 1;
+  file_string_sub_block = NULL;
 
-  file_string_sub_block_capacity =
-      (file_string_sub_block_len + 1) * sizeof(file_string_sub_block[0]);
 
-  file_string_sub_block = malloc(file_string_sub_block_capacity);
+  do {
+    file_string_sub_block_capacity *= 2;
+    file_string_sub_block = realloc(
+        file_string_sub_block,
+        file_string_sub_block_capacity * sizeof(file_string_sub_block[0])
+    );
 
-  if (file_string_sub_block == NULL) {
-    ExitOnAllocationFailure();
-  }
 
-  _snwprintf(
-      file_string_sub_block,
-      file_string_sub_block_len + 1,
-      L"\\StringFileInfo\\%04x%04x\\%ls",
-      lang_buffer[0].wLanguage,
-      lang_buffer[0].wCodePage,
-      string_name
-  );
+    if (file_string_sub_block == NULL) {
+      ExitOnAllocationFailure();
+    }
+
+    snwprintf_result = _snwprintf(
+        file_string_sub_block,
+        file_string_sub_block_capacity,
+        L"\\StringFileInfo\\%04x%04x\\%ls",
+        lang_buffer[0].wLanguage,
+        lang_buffer[0].wCodePage,
+        string_name
+    );
+  } while (snwprintf_result == -1);
+
+  file_string_sub_block[file_string_sub_block_capacity - 1] = L'\0';
 
   /* Query the file string value. */
   is_ver_query_value_success = VerQueryValueW(
