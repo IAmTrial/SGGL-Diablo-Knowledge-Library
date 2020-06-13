@@ -207,9 +207,8 @@ wchar_t* ExtractFileStringValue(
         lang_buffer[0].wCodePage,
         string_name
     );
-  } while (snwprintf_result == -1);
-
-  file_string_sub_block[file_string_sub_block_capacity - 1] = L'\0';
+  } while (snwprintf_result == -1
+      || snwprintf_result == file_string_sub_block_capacity);
 
   /* Query the file string value. */
   is_ver_query_value_success = VerQueryValueW(
