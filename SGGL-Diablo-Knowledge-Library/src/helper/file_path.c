@@ -29,8 +29,10 @@
 
 #include "file_path.h"
 
-#include <shlwapi.h>
 #include <stdlib.h>
+#include <windows.h>
+/* Must include after windows.h. */
+#include <shlwapi.h>
 
 #include "error_handling.h"
 

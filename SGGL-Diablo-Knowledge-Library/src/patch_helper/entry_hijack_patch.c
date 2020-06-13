@@ -35,7 +35,7 @@
 
 static const unsigned char kEntryHijackBytes[] = {
   /* push 0 */
-  0x68, 0x00, 0x00, 0x00, 0x00,
+  0x68, 0x41, 0x47, 0x50, 0x4C,
 
   /* call dummy_func */
   0xE8, 0x00, 0x00, 0x00, 0x00,
@@ -52,7 +52,7 @@ static const unsigned char kEntryHijackBytes[] = {
   0xEB, 0x04,
 
   /* Free space for one pointer. */
-  0x00, 0x00, 0x00, 0x00
+  0x4D, 0x69, 0x72, 0x44
 };
 
 struct BufferPatch* EntryHijackPatch_Init(
@@ -72,12 +72,19 @@ struct BufferPatch* EntryHijackPatch_Init(
   );
 
   free_space_address = (unsigned char*) patch_address
-      + EntryHijackPatch_GetSize()
-      - sizeof(void*);
+      + EntryHijackPatch_GetFreeSpaceOffset();
 
   memcpy(
       &entry_hijack_patch->patch_buffer[1],
       &free_space_address,
+      sizeof(free_space_address)
+  );
+
+  memset(
+      &entry_hijack_patch->patch_buffer[
+          EntryHijackPatch_GetFreeSpaceOffset()
+      ],
+      0,
       sizeof(free_space_address)
   );
 
